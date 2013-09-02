@@ -31,7 +31,7 @@ namespace Kernel.BFHAdmin.Client.GUI
 
         public async void Start()
         {
-            await RconClient.Connect("31.204.131.11", 8567, "SECRETPASSWORD");
+            await RconClient.Connect(Config.RconServerAddress, Config.RconServerPort, Config.RconServerPassword);
         }
 
         private void RconClientOnPlayerLeft(object sender, Player player)

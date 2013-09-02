@@ -18,12 +18,13 @@ using System.Windows.Markup.Localizer;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Commands;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Interfaces;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Models;
+using Kernel.BFHAdmin.Common;
 using PropertyChanging;
 
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol
 {
-    [ImplementPropertyChanging]
-    public class RconClient
+    //[ImplementPropertyChanging]
+    public class RconClient : NotifyPropertyBase
     {
         //http://www.battlefieldheroes.com/en/forum/showthread.php?tid=193367
         // http://www.battlefieldheroes.com/en/forum/archive/index.php/thread-331640.html
@@ -73,10 +74,50 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
         private Queue<RconQueueItem> CommandQueue = new Queue<RconQueueItem>();
         private RconQueueItem CurrentCommand;
 
-        public PlayerListCommand PlayerListCommand { get; set; }
-        public ServerInfoCommand ServerInfoCommand { get; set; }
-        public GetAdminListCommand GetAdminListCommand { get; set; }
-        public ClientChatBufferCommand ClientChatBufferCommand { get; set; }
+        public PlayerListCommand PlayerListCommand
+        {
+            get { return _playerListCommand; }
+            set
+            {
+                if (Equals(value, _playerListCommand)) return;
+                _playerListCommand = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ServerInfoCommand ServerInfoCommand
+        {
+            get { return _serverInfoCommand; }
+            set
+            {
+                if (Equals(value, _serverInfoCommand)) return;
+                _serverInfoCommand = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public GetAdminListCommand GetAdminListCommand
+        {
+            get { return _getAdminListCommand; }
+            set
+            {
+                if (Equals(value, _getAdminListCommand)) return;
+                _getAdminListCommand = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ClientChatBufferCommand ClientChatBufferCommand
+        {
+            get { return _clientChatBufferCommand; }
+            set
+            {
+                if (Equals(value, _clientChatBufferCommand)) return;
+                _clientChatBufferCommand = value;
+                OnPropertyChanged();
+            }
+        }
+
         public SimpleCommand Command { get; set; }
 
         private List<IAmAModule> Modules = new List<IAmAModule>();
@@ -275,6 +316,10 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
         // 7.2	1	16	0	0	lake	seaside_skirmish	Konge.net Battlefield Heroes Server	National	0	3	3	0	British	0	3	3	0	10	-1	gpm_ctf	bfheroes	(1024, 1024)	0	0	1	0	0	14699.5590077	0	3	1
         //private Regex reg_ServerInfo = new Regex(@"^\d+(\.\d+)?\s+\d+\s+\d+\s+\d+\s+\d+$");
         private List<string> _asyncCommandReturnBuffer;
+        private PlayerListCommand _playerListCommand;
+        private ServerInfoCommand _serverInfoCommand;
+        private GetAdminListCommand _getAdminListCommand;
+        private ClientChatBufferCommand _clientChatBufferCommand;
 
 
         private void ProcessLine(string line)

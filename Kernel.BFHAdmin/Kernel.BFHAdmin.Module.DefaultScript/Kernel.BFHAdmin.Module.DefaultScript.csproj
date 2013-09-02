@@ -49,6 +49,10 @@
       <Project>{94f9f581-5762-4ebe-a009-41101694b738}</Project>
       <Name>Kernel.BFHAdmin.Client.BFHRconProtocol</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Kernel.BFHAdmin.Common\Kernel.BFHAdmin.Common.csproj">
+      <Project>{70CD2F38-53A0-4658-95D9-DA08C140408D}</Project>
+      <Name>Kernel.BFHAdmin.Common</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

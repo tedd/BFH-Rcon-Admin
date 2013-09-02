@@ -61,7 +61,11 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
                 var score = _players[player].Player.Score.Score;
                 if (score != player.Score.Score)
                 {
-                        _rconClient.SendMessagePlayer(player.Name, "KernelDebug: Score: " + score);
+                    var scoreDiff = player.Score.Score - score;
+                    string scoreDiffStr = scoreDiff.ToString();
+                    if (scoreDiff > 0)
+                        scoreDiffStr = "+" + scoreDiffStr;
+                        _rconClient.SendMessagePlayer(player.Name, "KD: Score: " + scoreDiffStr);
                 }
                 _players[player].Player.Score.Score = player.Score.Score;
             }

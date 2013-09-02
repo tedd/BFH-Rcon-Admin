@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Nini>
+  
+  <Section Name="Settings">
+    <Key Name="RconServerAddress" Value="31.204.131.11" />
+    <Key Name="RconServerPort" Value="8567" />
+    <Key Name="RconServerPassword" Value="SECRETPASSWORD" />
+  </Section>
+</Nini>
