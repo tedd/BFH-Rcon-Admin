@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kernel.BFHAdmin.Client.GUI", "Kernel.BFHAdmin.Client.GUI\Kernel.BFHAdmin.Client.GUI.csproj", "{555D8437-60F4-41A0-BD9E-7E3335A82671}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kernel.BFHAdmin.Common", "Kernel.BFHAdmin.Common\Kernel.BFHAdmin.Common.csproj", "{70CD2F38-53A0-4658-95D9-DA08C140408D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kernel.BFHAdmin.Client.BFHRconProtocol", "Kernel.BFHAdmin.Client.BFHRconProtocol\Kernel.BFHAdmin.Client.BFHRconProtocol.csproj", "{94F9F581-5762-4EBE-A009-41101694B738}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kernel.BFHAdmin.Module.DefaultScript", "Kernel.BFHAdmin.Module.DefaultScript\Kernel.BFHAdmin.Module.DefaultScript.csproj", "{D6C55D39-D8BE-40F3-A4F9-67C1575E0C9E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ThirdParty", "ThirdParty", "{F90211D7-7F41-46D7-8269-81973DB3A26C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kernel.Module", "..\Kernel.Module\Kernel.Module\Kernel.Module.csproj", "{D9C36881-7C7E-4525-AAA6-FF696185C882}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{555D8437-60F4-41A0-BD9E-7E3335A82671}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{555D8437-60F4-41A0-BD9E-7E3335A82671}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{555D8437-60F4-41A0-BD9E-7E3335A82671}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{555D8437-60F4-41A0-BD9E-7E3335A82671}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70CD2F38-53A0-4658-95D9-DA08C140408D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70CD2F38-53A0-4658-95D9-DA08C140408D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70CD2F38-53A0-4658-95D9-DA08C140408D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70CD2F38-53A0-4658-95D9-DA08C140408D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{94F9F581-5762-4EBE-A009-41101694B738}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94F9F581-5762-4EBE-A009-41101694B738}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94F9F581-5762-4EBE-A009-41101694B738}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94F9F581-5762-4EBE-A009-41101694B738}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6C55D39-D8BE-40F3-A4F9-67C1575E0C9E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6C55D39-D8BE-40F3-A4F9-67C1575E0C9E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6C55D39-D8BE-40F3-A4F9-67C1575E0C9E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6C55D39-D8BE-40F3-A4F9-67C1575E0C9E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9C36881-7C7E-4525-AAA6-FF696185C882}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9C36881-7C7E-4525-AAA6-FF696185C882}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9C36881-7C7E-4525-AAA6-FF696185C882}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9C36881-7C7E-4525-AAA6-FF696185C882}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D9C36881-7C7E-4525-AAA6-FF696185C882} = {F90211D7-7F41-46D7-8269-81973DB3A26C}
+	EndGlobalSection
+EndGlobal
