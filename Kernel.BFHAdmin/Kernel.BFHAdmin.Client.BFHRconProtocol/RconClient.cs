@@ -14,12 +14,16 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Markup.Localizer;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Commands;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Interfaces;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Models;
 using Kernel.BFHAdmin.Common;
+using Kernel.BFHAdmin.Common.Utils;
+using NLog;
 using PropertyChanging;
+using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol
 {
@@ -29,6 +33,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
         //http://www.battlefieldheroes.com/en/forum/showthread.php?tid=193367
         // http://www.battlefieldheroes.com/en/forum/archive/index.php/thread-331640.html
         // Lists: http://www.battlefieldheroes.com/en/forum/showthread.php?tid=132702
+        private static Logger log = LogManager.GetCurrentClassLogger();
         internal enum RconState
         {
             Unknown,
@@ -38,17 +43,21 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
             AsyncCommand,
         }
 
+        private string _doneCommand;
+
         public string ServerVersion { get; private set; }
         public string Address { get; private set; }
         public int Port { get; private set; }
         public string Password { get; private set; }
 
-        private int _defaultCommandTimeoutMs = 1000;
-        public int DefaultCommandTimeoutMs
-        {
-            get { return _defaultCommandTimeoutMs; }
-            set { _defaultCommandTimeoutMs = value; }
-        }
+        public bool DebugProtocolData = true;
+
+        //private int _defaultCommandTimeoutMs = 1000;
+        //public int DefaultCommandTimeoutMs
+        //{
+        //    get { return _defaultCommandTimeoutMs; }
+        //    set { _defaultCommandTimeoutMs = value; }
+        //}
 
         private int _statusPullDelayMs = 5000;
         public int StatusPullDelayMs
@@ -70,10 +79,23 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
         private bool _connected = false;
         private bool CurrentStateWaitingForFirst = false;
         private RconState CurrentState = RconState.Unknown;
-        private DateTime CurrentStateTimeout = DateTime.Now.AddSeconds(10);
+        //private DateTime CurrentStateTimeout = DateTime.Now.AddSeconds(10);
         private Queue<RconQueueItem> CommandQueue = new Queue<RconQueueItem>();
         private RconQueueItem CurrentCommand;
+        private Action _pollingTimerCancelAction;
 
+        public RconClientConfig Config
+        {
+            get { return _config; }
+            set
+            {
+                if (Equals(value, _config)) return;
+                _config = value;
+                OnPropertyChanged();
+            }
+        }
+
+        [ExpandableObject()]
         public PlayerListCommand PlayerListCommand
         {
             get { return _playerListCommand; }
@@ -85,6 +107,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
             }
         }
 
+        [ExpandableObject()]
         public ServerInfoCommand ServerInfoCommand
         {
             get { return _serverInfoCommand; }
@@ -95,18 +118,18 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
                 OnPropertyChanged();
             }
         }
-
-        public GetAdminListCommand GetAdminListCommand
-        {
-            get { return _getAdminListCommand; }
-            set
-            {
-                if (Equals(value, _getAdminListCommand)) return;
-                _getAdminListCommand = value;
-                OnPropertyChanged();
-            }
-        }
-
+        //[ExpandableObject()]
+        //public GetAdminListCommand GetAdminListCommand
+        //{
+        //    get { return _getAdminListCommand; }
+        //    set
+        //    {
+        //        if (Equals(value, _getAdminListCommand)) return;
+        //        _getAdminListCommand = value;
+        //        OnPropertyChanged();
+        //    }
+        //}
+        [ExpandableObject()]
         public ClientChatBufferCommand ClientChatBufferCommand
         {
             get { return _clientChatBufferCommand; }
@@ -120,28 +143,62 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
 
         public SimpleCommand Command { get; set; }
 
-        private List<IAmAModule> Modules = new List<IAmAModule>();
+        private List<IAmAModule> _modules = new List<IAmAModule>();
 
+        public IEnumerable<IAmAModule> Modules
+        {
+            get
+            {
+                List<IAmAModule> modules;
+                lock (_modules)
+                {
+                    modules = new List<IAmAModule>(_modules);
+                }
+                foreach (var module in modules)
+                {
+                    yield return module;
+                }
+            }
+        }
         public void AddModule(IAmAModule module)
         {
-            lock (Modules)
+            AddModuleInternal(module);
+            module.ModuleLoadComplete();
+        }
+        private void AddModuleInternal(IAmAModule module)
+        {
+            var moduleName = module.GetType().FullName;
+            log.Debug("RconClient registering module: " + moduleName);
+            lock (_modules)
             {
-                Modules.Add(module);
+                _modules.Add(module);
+                OnPropertyChanged("Modules");
+            }
+            try
+            {
                 module.Register(this);
+            }
+            catch (Exception exception)
+            {
+                log.ErrorException("Exception: RconClient registering module \"" + moduleName + "\" failed: ", exception);
             }
         }
 
-        public void Exec_mm_saveConfig()
+        public Task<List<string>> Exec_mm_saveConfig()
         {
-            Command.Exec("mm saveConfig");
+            return Command.Exec("mm saveConfig");
         }
-        public void SendMessageAll(string message)
+        public Task<List<string>> SendMessageAll(string message)
         {
-            Command.Exec("exec game.sayAll \"" + message + "\"");
+            return Command.Exec("exec game.sayAll \"" + message + "\"");
         }
-        public void SendMessagePlayer(string playerName, string message)
+        public Task<List<string>> SendMessagePlayer(string playerName, string message)
         {
-            Command.Exec("exec game.sayToPlayerWithName " + playerName +" \"" + message + "\"");
+            return Command.Exec("exec game.sayToPlayerWithName " + playerName + " \"" + message + "\"");
+        }
+        public Task<List<string>> SendMessagePlayer(Player player, string message)
+        {
+            return SendMessagePlayer(player.Name, message);
         }
 
         #region Events
@@ -189,9 +246,12 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
 
         public RconClient()
         {
+            log.Debug("RconClient startup");
+            Random rnd = new Random();
+            _doneCommand = "$^!(\"done."+rnd.Next(0,int.MaxValue) + ".done\")!^$"; // Some random string that won't show up in any of our data
             PlayerListCommand = new PlayerListCommand(this);
             ServerInfoCommand = new ServerInfoCommand(this);
-            GetAdminListCommand = new GetAdminListCommand(this);
+            //GetAdminListCommand = new GetAdminListCommand(this);
             ClientChatBufferCommand = new ClientChatBufferCommand(this);
             Command = new SimpleCommand(this);
 
@@ -200,21 +260,80 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
 
         private void LoadModules()
         {
-            var files = System.IO.Directory.GetFiles(Directory.GetCurrentDirectory());
+            var dir = Directory.GetCurrentDirectory();
+            log.Debug("LoadModules(): Start: Scanning directory for files matching \"*.module.*dll\": " + dir);
+            List<Task> loadTasks = new List<Task>();
+            // Get files in current directory
+            var files = System.IO.Directory.GetFiles(dir);
             foreach (var f in files)
             {
+                // Check if the filename indicates they are a module
                 var file = f.ToLower();
                 if (file.Contains(".module.") && file.EndsWith(".dll"))
                 {
-                    var module = Kernel.Module.ModuleLoader.Load(file);
-                    var classes = module.GetClasses<IAmAModule>();
-                    foreach (var c in classes)
+                    log.Debug("LoadModules(): Async loading module: \"" + file + "\"");
+                    // Attempt to load file
+                    var task = Task.Run(
+                        () =>
+                        {
+
+                            Module.Module module = null;
+                            try
+                            {
+                                module = Kernel.Module.ModuleLoader.Load(file);
+                                if (module == null)
+                                    throw new Exception("module returnes is null.");
+
+                            }
+                            catch (Exception exception)
+                            {
+                                log.ErrorException("LoadModules(): Exception: Loading module \"" + file + "\" failed: ", exception);
+                            }
+                            // ReSharper disable PossibleNullReferenceException
+                            var classes = module.GetClasses<IAmAModule>();
+                            // ReSharper restore PossibleNullReferenceException
+                            foreach (var c in classes)
+                            {
+                                try
+                                {
+                                    var m = c.CreateInstance<IAmAModule>();
+                                    AddModuleInternal(m);
+                                }
+                                catch (Exception exception)
+                                {
+                                    log.ErrorException("LoadModules(): Exception: Instancing class \"" + c.FullName + "\" in \"" + file + "\" failed: ", exception);
+                                }
+                            }
+
+
+                        });
+                    loadTasks.Add(task);
+                }
+            }
+
+            // Wait for all modules to load
+            foreach (var t in loadTasks)
+            {
+                // Should be safe without try-catch since we catch internally (above here)
+                t.Wait();
+            }
+
+            // Send "ModuleLoadComplete" once all modules has been loaded
+            lock (_modules)
+            {
+                foreach (var m in _modules)
+                {
+                    try
                     {
-                        var m = c.CreateInstance<IAmAModule>();
-                        AddModule(m);
+                        m.ModuleLoadComplete();
+                    }
+                    catch (Exception exception)
+                    {
+                        log.ErrorException("LoadModules(): Exception: Calling ModuleLoadComplete() on class \"" + m.GetType() + "\": ", exception);
                     }
                 }
             }
+
         }
 
         public async Task Connect(string address, int port, string password)
@@ -226,42 +345,67 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
             if (socket != null)
                 throw new Exception("Can't connect on already open socket!");
 
+            log.Info(string.Format("Connect(): Address: {0}, Port: {1}", Address, Port));
 
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             await Task.Run(() => socket.Connect(Address, Port));
+            //socket.Conn)
+            // TODO: Change to "TcpClient"?
+
             networkStream = new NetworkStream(socket);
             streamReader = new StreamReader(networkStream, Encoding.ASCII);
             streamWriter = new StreamWriter(networkStream, Encoding.ASCII);
             CommandQueue = new Queue<RconQueueItem>();
             CurrentState = RconState.Login;
             _connected = true;
+            log.Info("Connect(): Connected!");
 
-            Task.Run(() => StartReadLoop());
-            Task.Run(() => StartWriteLoop());
+            Task.Run(() => ReadLoop());
+            Task.Run(() => WriteLoop());
         }
 
-        private async void StartPollLoop()
+        private async void StartPollingTimers()
         {
-            while (true)
-            {
-                PlayerListCommand.RefreshPlayerList();
-                ServerInfoCommand.RefreshServerInfo();
-                GetAdminListCommand.RefreshAdminList();
-                ClientChatBufferCommand.RefreshClientChatBufferCommand();
+            log.Trace("StartPollingTimers(): Start.");
 
-                await Task.Delay(StatusPullDelayMs);
-                if (!_connected)
-                    return;
-            }
+            var c1 = new CancellationTokenSource();
+            var c2 = new CancellationTokenSource();
+            var c3 = new CancellationTokenSource();
+            var c4 = new CancellationTokenSource();
+            _pollingTimerCancelAction = new Action(() =>
+                              {
+                                  c1.Cancel();
+                                  c2.Cancel();
+                                  c3.Cancel();
+                                  c4.Cancel();
+                              });
+
+            PeriodicTaskFactory.Start(() => PlayerListCommand.RefreshPlayerList(), cancelToken: c1.Token, intervalInMilliseconds: this.Config.PollIntervalMs_PlayerListCommand, delayInMilliseconds: 1000, synchronous: false);
+            PeriodicTaskFactory.Start(() => ServerInfoCommand.RefreshServerInfo(), cancelToken: c2.Token, intervalInMilliseconds: this.Config.PollIntervalMs_ServerInfoCommand, delayInMilliseconds: 1000, synchronous: false);
+            PeriodicTaskFactory.Start(() => ClientChatBufferCommand.RefreshClientChatBufferCommand(), cancelToken: c3.Token, intervalInMilliseconds: this.Config.PollIntervalMs_ClientChatBufferCommand, delayInMilliseconds: 1000, synchronous: false);
+            //PeriodicTaskFactory.Start(() => GetAdminListCommand.RefreshAdminList(), cancelToken: c4.Token, intervalInMilliseconds: this.Config.PollIntervalMs_AdminListCommand, delayInMilliseconds: 1000, synchronous: false);
+            //while (true)
+            //{
+            //    PlayerListCommand.RefreshPlayerList();
+            //    ServerInfoCommand.RefreshServerInfo();
+            //    ClientChatBufferCommand.RefreshClientChatBufferCommand();
+            //    //GetAdminListCommand.RefreshAdminList();
+
+            //    await Task.Delay(StatusPullDelayMs);
+            //    if (!_connected)
+            //        break;
+            //}
+            log.Trace("StartPollingTimers(): End");
         }
 
-        private async void StartWriteLoop()
+        private async void WriteLoop()
         {
+            log.Trace("WriteLoop(): Start. Interval: " + SendDelayMs + " ms");
             while (true)
             {
                 await Task.Delay(SendDelayMs);
                 if (!_connected)
-                    return;
+                    break;
 
                 //// If a command uses too long to return we move on
                 //if (CurrentState != RconState.Ready)
@@ -281,16 +425,19 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
                             CurrentCommand = cmd;
                             CurrentState = cmd.PutsInState;
                             CurrentStateWaitingForFirst = true;
-                            CurrentStateTimeout = DateTime.Now.AddMilliseconds(DefaultCommandTimeoutMs);
-                            Write(cmd.Command + "\n" + "\x002" + "done11done\n");
+                            //CurrentStateTimeout = DateTime.Now.AddMilliseconds(DefaultCommandTimeoutMs);
+                            log.Trace("WriteLoop(): Sending command: \"" + cmd.Command + "\"");
+                            Write(cmd.Command + "\n" + "\x002" + _doneCommand +"\n");
                         }
                     }
                 }
             }
+            log.Trace("WriteLoop(): End");
         }
 
-        private async void StartReadLoop()
+        private async void ReadLoop()
         {
+            log.Trace("ReadLoop(): Start");
             while (true)
             {
                 if (!_connected)
@@ -300,13 +447,16 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
                 if (line == null || !socket.Connected)
                 {
                     Disconnect();
-                    return;
+                    break;
                 }
 
-                Debug.WriteLine("READ: " + line);
+                if (DebugProtocolData)
+                    log.Trace("ReadLoop(): Read: \"" + line + "\"");
                 ProcessLine(line);
 
             }
+            log.Trace("ReadLoop(): End");
+
         }
 
         //### Battlefield Heroes ModManager Rcon v8.5.
@@ -320,16 +470,21 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
         private ServerInfoCommand _serverInfoCommand;
         private GetAdminListCommand _getAdminListCommand;
         private ClientChatBufferCommand _clientChatBufferCommand;
+        private RconClientConfig _config = new RconClientConfig();
 
 
         private void ProcessLine(string line)
         {
             if (line == null)
                 return;
+
+            if (DebugProtocolData)
+                log.Trace("ProcessLine(): " + line);
+
             OnReceivedLine(line);
 
             // Command completed?
-            bool currentStateDone = line.Contains("done11done");
+            bool currentStateDone = line.Contains("unknown command: '"+ _doneCommand + "'");
 
             switch (CurrentState)
             {
@@ -337,13 +492,16 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
                 case RconState.Login:
                     var greet = reg_Greet.Match(line);
                     if (greet.Success)
-                        Debug.WriteLine("Version: " + greet.Groups[1].Value);
+                    {
+                        ServerVersion = greet.Groups[1].Value;
+                        log.Debug("ProcessLine(): Server version: " + ServerVersion);
+                    }
                     var seed = reg_Seed.Match(line);
                     if (seed.Success)
                     {
                         CurrentState = RconState.Auth;
-                        Debug.WriteLine(seed.Groups[1].Value + Password);
                         var ret = "login " + HashString(seed.Groups[1].Value + Password);
+                        log.Trace("ProcessLine(): Sending login info: " + ret);
                         Write(ret + "\n");
                         return;
                     }
@@ -351,7 +509,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
                 case RconState.Auth:
                     if (line.StartsWith("Authentication failed"))
                     {
-                        Debug.WriteLine("Auth failed");
+                        log.Error("Authentication failed!");
                         CurrentState = RconState.Unknown;
                         OnAuthFailed();
                         Disconnect();
@@ -359,11 +517,11 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
                     }
                     if (line.StartsWith("Authentication successful"))
                     {
-                        Debug.WriteLine("Auth Success");
+                        log.Debug("ProcessLine(): Authentication successful. We are logged in.");
                         CurrentState = RconState.Ready;
                         OnConnected();
                         // Start polling
-                        Task.Run(() => StartPollLoop());
+                        StartPollingTimers();
                         return;
                     }
                     break;
@@ -378,14 +536,18 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
                     }
                     if (currentStateDone)
                     {
-                        CurrentCommand.TaskCompletionSource.SetResult(_asyncCommandReturnBuffer);
+                        var cc = CurrentCommand;
                         CurrentCommand = null;
-                        break;
+                        // Special state - we need to free up for next command, return data to async waiting and completely exit (so we don't re-set CurrentState when new command has started)
+                        CurrentState = RconState.Ready;
+                        cc.TaskCompletionSource.SetResult(_asyncCommandReturnBuffer);
+                        return;
                     }
                     _asyncCommandReturnBuffer.Add(line);
                     break;
 
                 default:
+                    log.Trace("ProcessLine(): Unhandled line: " + line);
                     OnReceivedUnhandledLine(line);
                     break;
 
@@ -401,6 +563,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
         {
             lock (CommandQueue)
             {
+                log.Trace("EnqueueCommand(): " + rconQueueItem.Command);
                 CommandQueue.Enqueue(rconQueueItem);
             }
         }
@@ -412,7 +575,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
 
         private async void Write(string str)
         {
-            Debug.WriteLine("WRITE: " + str);
+            log.Trace("Write(): " + str);
             await streamWriter.WriteAsync("\x002" + str);
             await streamWriter.FlushAsync();
             //          byte[] outBuffer = Wrap4Rcon(str);
@@ -435,21 +598,22 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
 
         public void Disconnect()
         {
-            Debug.WriteLine("DISCONNECT");
+            log.Trace("Disconnect(): Start");
+            if (_pollingTimerCancelAction != null)
+            {
+                _pollingTimerCancelAction.Invoke();
+                _pollingTimerCancelAction = null;
+            }
             _connected = false;
             networkStream.Close(100);
             socket.Disconnect(false);
             socket = null;
             networkStream = null;
+            log.Trace("Disconnect(): End");
             OnDisconnected();
         }
 
-        public void SendRaw(string text)
-        {
-            Write(text + "\n");
-        }
-
-
+     
     }
 }
 

@@ -9,5 +9,6 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Interfaces
     public interface IAmAModule
     {
         void Register(RconClient rconClient);
+        void ModuleLoadComplete();
     }
 }

@@ -4,12 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Kernel.BFHAdmin.Common;
+using Kernel.BFHAdmin.Common.Interfaces;
 using Newtonsoft.Json;
 using PropertyChanging;
 
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 {
-    public class AdminListItem : NotifyPropertyBase
+    public class AdminListItem : NotifyPropertyBase, ITypeCloneable<AdminListItem>
     {
         private int _port;
         private string _address;
@@ -49,7 +50,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 
         public AdminListItem Clone()
         {
-            return JsonConvert.DeserializeObject<AdminListItem>(JsonConvert.SerializeObject(this));
+            return (AdminListItem)this.MemberwiseClone();
         }
     }
 }

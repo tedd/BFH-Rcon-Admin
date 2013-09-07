@@ -6,15 +6,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Models;
+using NLog;
 
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
 {
     public class PlayerListCommand
     {
+        private static Logger log = LogManager.GetCurrentClassLogger();
         //public Dictionary<string, Player> Players = new Dictionary<string, Player>();
         public RconClient RconClient { get; private set; }
         private Dictionary<string, Player> _players = new Dictionary<string, Player>();
-        private Dictionary<Player, bool> _plPlayerDiff;
 
         public PlayerListCommand(RconClient rconClient)
         {
@@ -44,22 +45,42 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
             PlayerUpdatedDelegate handler = PlayerUpdated;
             if (handler != null) handler(this, player);
         }
+
+        public delegate void PlayerUpdateStartDelegate(object sender);
+        public event PlayerUpdateStartDelegate PlayerUpdateStart;
+        protected virtual void OnPlayerUpdateStart()
+        {
+            PlayerUpdateStartDelegate handler = PlayerUpdateStart;
+            if (handler != null) handler(this);
+        }
+
+        public delegate void PlayerUpdateDoneDelegate(object sender);
+        public event PlayerUpdateDoneDelegate PlayerUpdateDone;
+        protected virtual void OnPlayerUpdateDone()
+        {
+            PlayerUpdateDoneDelegate handler = PlayerUpdateDone;
+            if (handler != null) handler(this);
+        }
+
         #endregion
 
         public async void RefreshPlayerList()
         {
+            log.Trace("RefreshPlayerList(): Start");
             var qi = new RconQueueItem("bf2cc pl", RconClient.RconState.AsyncCommand);
             RconClient.EnqueueCommand(qi);
             var lines = await qi.TaskCompletionSource.Task;
+            int added = 0, removed = 0;
 
             // Process result
-            _plPlayerDiff = new Dictionary<Player, bool>();
+            OnPlayerUpdateStart();
+            var _plPlayerDiff = new Dictionary<Player, bool>();
             foreach (var line in lines)
             {
 
                 var plSplit = line.Split(Utils.Tab);
                 var playerName = plSplit[1];
-                Debug.WriteLine("Player info for: " + playerName);
+                //Debug.WriteLine("Player info for: " + playerName);
                 Player p = GetPlayer(plSplit[1]);
                 bool newPlayer = false;
                 if (p == null)
@@ -69,12 +90,19 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                     lock (_players)
                     {
                         _players.Add(playerName, p);
+                        added++;
                     }
                 }
                 _plPlayerDiff.Add(p, true);
                 p.Index = plSplit[0];
                 p.Name = plSplit[1];
-                p.Team = int.Parse(plSplit[2]);
+                p.TeamId = int.Parse(plSplit[2]);
+                // Link to correct team object
+                if (p.TeamId == 1)
+                    p.Team = RconClient.ServerInfoCommand.ServerInfo.Team1;
+                if (p.TeamId == 2)
+                    p.Team = RconClient.ServerInfoCommand.ServerInfo.Team2;
+
                 p.Ping = int.Parse(plSplit[3]);
                 p.IsConnected = Utils.BoolParse(plSplit[4]);
                 p.IsValid = Utils.BoolParse(plSplit[5]);
@@ -113,7 +141,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                 p.Score.Score = int.Parse(plSplit[37]);
                 p.VehicleName = plSplit[38];
                 p.Score.Rank = int.Parse(plSplit[39]);
-                p.Position = plSplit[40];
+                p.Position.ParseFrom(plSplit[40]);
                 p.IdleTime = int.Parse(plSplit[41]); //ki.idleTime
                 p.Cdkeyhash = plSplit[42];
                 p.TkData_Punished = Utils.BoolParse(plSplit[43]); //tkData.punished
@@ -122,21 +150,29 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                 p.Vip = Utils.BoolParse(plSplit[46]);
                 p.NucleusId = plSplit[47];
                 if (newPlayer)
+                {
+                    RconClient.ServerInfoCommand.ServerInfo.Team1.AddPlayer(p);
                     OnPlayerJoined(p);
-                
+                }
+
                 OnPlayerUpdated(p);
             }
-
-
 
             foreach (var kvp in new Dictionary<string, Player>(_players))
             {
                 if (!_plPlayerDiff.ContainsKey(kvp.Value))
                 {
                     _players.Remove(kvp.Key);
+                    RconClient.ServerInfoCommand.ServerInfo.Team1.RemovePlayer(kvp.Value);
                     OnPlayerLeft(kvp.Value);
+                    removed++;
                 }
             }
+
+            OnPlayerUpdateDone();
+
+            log.Trace("RefreshPlayerList(): End (" + lines.Count + " players, " + added + " new, " + removed + " removed)");
+
         }
 
 

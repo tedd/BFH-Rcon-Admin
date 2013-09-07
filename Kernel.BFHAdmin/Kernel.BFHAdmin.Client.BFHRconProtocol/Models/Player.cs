@@ -5,16 +5,19 @@ using System.Text;
 using System.Threading.Tasks;
 using Kernel.BFHAdmin.Common;
 using Kernel.BFHAdmin.Common.Annotations;
+using Kernel.BFHAdmin.Common.Interfaces;
 using Newtonsoft.Json;
 using PropertyChanging;
 using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 {
-    public class Player : NotifyPropertyBase
+    public class Player : NotifyPropertyBase, ITypeCloneable<Player>
     {
+        // Note: When adding/removing fields you also need to update fields in both Clone() and -() methods.
+
         private PlayerScore _score = new PlayerScore();
-        private string _position;
+        private PlayerPosition _position = new PlayerPosition();
         private int _vehicleType;
         private string _nucleusId;
         private bool _vip;
@@ -41,13 +44,51 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
         private bool _isValid;
         private bool _isConnected;
         private int _ping;
-        private int _team;
+        private int _teamId;
         private string _name;
         private string _index;
         private int _tkDataTimesForgiven;
         private int _tkDataTimesPunished;
         private bool _tkDataPunished;
         private string _kit;
+        private string _fullName;
+        private Team _team;
+
+        public static Player operator -(Player a, Player b)
+        {
+            // Produce a delta object containing differences
+            var ret = new Player();
+
+            // Integers
+            ret.IdleTime = a.IdleTime - b.IdleTime;
+            ret.Ping = a.Ping - b.Ping;
+            ret.TimeToSpawn = a.TimeToSpawn - b.TimeToSpawn;
+            ret.Suicide = a.Suicide - b.Suicide;
+            ret.TkData_TimesForgiven = a.TkData_TimesForgiven - b.TkData_TimesForgiven;
+            ret.TkData_TimesPunished = a.TkData_TimesPunished - b.TkData_TimesPunished;
+
+            // Booleans
+            ret.Vip = (a.Vip == b.Vip);
+            ret.IsFlagholder = (a.IsFlagholder == b.IsFlagholder);
+            ret.IsCommander = (a.IsCommander == b.IsCommander);
+            ret.IsSquadLeader = (a.IsSquadLeader == b.IsSquadLeader);
+            ret.IsManDown = (a.IsManDown == b.IsManDown);
+            ret.IsAlive = (a.IsAlive == b.IsAlive);
+            ret.IsAIPlayer = (a.IsAIPlayer == b.IsAIPlayer);
+            ret.IsRemote = (a.IsRemote == b.IsRemote);
+            ret.IsValid = (a.IsValid == b.IsValid);
+            ret.IsConnected = (a.IsConnected == b.IsConnected);
+            ret.TkData_Punished = (a.TkData_Punished == b.TkData_Punished);
+
+            // Strings
+
+            // Child models
+            ret.Score = a.Score - b.Score;
+            ret.Position = a.Position - b.Position;
+
+            return ret;
+        }
+
         public string Kit
         {
             get { return _kit; }
@@ -95,7 +136,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
         public PlayerScore Score
         {
             get { return _score; }
-            set { _score = value; }
+            private set { _score = value; }
         }
 
         public string Index
@@ -120,12 +161,24 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
             }
         }
 
-        public int Team
+        public int TeamId
+        {
+            get { return _teamId; }
+            set
+            {
+                if (value == _teamId) return;
+                _teamId = value;
+                OnPropertyChanged();
+            }
+        }
+    
+        [ExpandableObject()]
+        public Team Team
         {
             get { return _team; }
             set
             {
-                if (value == _team) return;
+                if (Equals(value, _team)) return;
                 _team = value;
                 OnPropertyChanged();
             }
@@ -417,8 +470,8 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
                 OnPropertyChanged();
             }
         }
-
-        public string Position
+        [ExpandableObject()]
+        public PlayerPosition Position
         {
             get { return _position; }
             set
@@ -432,7 +485,17 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 
         public Player Clone()
         {
-            return JsonConvert.DeserializeObject<Player>(JsonConvert.SerializeObject(this));
+            var newObj = (Player)this.MemberwiseClone();
+            newObj.Score = this.Score.Clone();
+            newObj.Position = this.Position.Clone();
+            return newObj;
         }
+
+        public override string ToString()
+        {
+            return Name;
+        }
+
+
     }
 }

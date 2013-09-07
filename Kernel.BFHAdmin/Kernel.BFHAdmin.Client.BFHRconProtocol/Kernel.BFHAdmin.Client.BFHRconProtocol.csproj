@@ -36,6 +36,9 @@
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\packages\Newtonsoft.Json.5.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="NLog">
+      <HintPath>..\packages\NLog.2.0.1.2\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="PresentationFramework" />
     <Reference Include="PropertyChanging">
       <HintPath>..\packages\PropertyChanging.Fody.1.25.3\Lib\NET35\PropertyChanging.dll</HintPath>
@@ -63,6 +66,8 @@
     <Compile Include="Interfaces\IAmAModule.cs" />
     <Compile Include="Models\AdminListItem.cs" />
     <Compile Include="Models\ChatHistoryItem.cs" />
+    <Compile Include="Models\PlayerPosition.cs" />
+    <Compile Include="Models\RconClientConfig.cs" />
     <Compile Include="RconClient.cs" />
     <Compile Include="Models\Player.cs" />
     <Compile Include="Models\PlayerScore.cs" />

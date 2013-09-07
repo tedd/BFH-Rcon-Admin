@@ -4,13 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Kernel.BFHAdmin.Common;
+using Kernel.BFHAdmin.Common.Interfaces;
 using Newtonsoft.Json;
 using PropertyChanging;
 using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 {
-    public class ServerInfo : NotifyPropertyBase
+    public class ServerInfo : NotifyPropertyBase, ITypeCloneable<ServerInfo>
     {
         public enum GameStatus
         {
@@ -43,6 +44,8 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
         private int _maxPlayers;
         private GameStatus _currentGameStatus;
         private string _version;
+        private bool _isPregame;
+
         [ExpandableObject()]
         public Team Team1
         {
@@ -308,9 +311,48 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
             }
         }
 
+        public bool IsPregame
+        {
+            get { return _isPregame; }
+            set
+            {
+                if (value.Equals(_isPregame)) return;
+                _isPregame = value;
+                OnPropertyChanged();
+            }
+        }
+
         public ServerInfo Clone()
         {
-            return JsonConvert.DeserializeObject<ServerInfo>(JsonConvert.SerializeObject(this));
+            var ret = (ServerInfo)this.MemberwiseClone();
+            ret.Team1 = this.Team1.Clone();
+            ret.Team2 = this.Team2.Clone();
+            return ret;
         }
+
+        public static ServerInfo operator -(ServerInfo a, ServerInfo b)
+        {
+            // Produce a delta object containing differences
+            var ret = new ServerInfo();
+
+            // Int
+            ret.WallTime = a.WallTime - b.WallTime;
+            ret.RemainingTime = a.RemainingTime - b.RemainingTime;
+            ret.ElapsedRoundTime = a.ElapsedRoundTime - b.ElapsedRoundTime;
+            ret.Joining = a.Joining - b.Joining;
+            ret.Players = a.Players - b.Players;
+            ret.MaxPlayers = a.MaxPlayers - b.MaxPlayers;
+
+            // Bool
+            ret.RankedStatus = (a.RankedStatus == b.RankedStatus);
+            ret.IsPregame = (a.IsPregame == b.IsPregame);
+
+            // Custom
+            ret.Team1 = a.Team1 - b.Team1;
+            ret.Team2 = a.Team2 - b.Team2;
+
+            return ret;
+        }
+
     }
 }

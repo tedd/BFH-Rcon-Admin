@@ -6,15 +6,33 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Models;
+using Kernel.BFHAdmin.Common;
+using NLog;
+using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
 {
-    public class ServerInfoCommand
+    public class ServerInfoCommand: NotifyPropertyBase
     {
+        private static Logger log = LogManager.GetCurrentClassLogger();
+
         public RconClient RconClient { get; private set; }
-        public ServerInfo ServerInfo { get; private set; }
+        
+        [ExpandableObject()]
+        public ServerInfo ServerInfo
+        {
+            get { return _serverInfo; }
+            private set
+            {
+                if (Equals(value, _serverInfo)) return;
+                _serverInfo = value;
+                OnPropertyChanged();
+            }
+        }
+
         private ServerInfo _lastRoundServerInfo;
         private int _lastElapsedRoundTime = 0;
+        private ServerInfo _serverInfo;
 
         public delegate void RoundStartDelegate(object sender, ServerInfo lastRoundServerInfo);
         public event RoundStartDelegate RoundStart;
@@ -50,6 +68,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
 
         public async void RefreshServerInfo()
         {
+            log.Trace("RefreshServerInfo(): Start");
             var qi = new RconQueueItem("bf2cc si", RconClient.RconState.AsyncCommand);
             RconClient.EnqueueCommand(qi);
             var lines = await qi.TaskCompletionSource.Task;
@@ -60,7 +79,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                 //if (serverInfo.Success)
                 //{
                 var siSplit = line.Split(Utils.Tab);
-                Debug.WriteLine("Server info for: " + siSplit[7]);
+                log.Trace("RefreshServerInfo(): Server info for: " + siSplit[7]);
                 // 7.2	1	16	0	0	lake	seaside_skirmish	Konge.net Battlefield Heroes Server	National	0	3	3	0	British	0	3	3	0	10	-1	gpm_ctf	bfheroes	(1024, 1024)	0	0	1	0	0	14699.5590077	0	3	1
                 ServerInfo.Version = siSplit[0];
                 ServerInfo.CurrentGameStatus = (ServerInfo.GameStatus)Enum.Parse(typeof(ServerInfo.GameStatus), siSplit[1]);
@@ -95,6 +114,8 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                 ServerInfo.TotalRounds = int.Parse(siSplit[30]);
                 ServerInfo.CurrentRound = int.Parse(siSplit[31]);
 
+                ServerInfo.IsPregame = !(ServerInfo.Team1.Count > 1 && ServerInfo.Team2.Count > 1);
+
                 OnServerInfoUpdated(ServerInfo);
 
                 //if (_lastElapsedRoundTime > ServerInfo.ElapsedRoundTime)
@@ -114,6 +135,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                 }
                 _lastElapsedRoundTime = ServerInfo.ElapsedRoundTime;
                 //}
+                log.Trace("RefreshServerInfo(): End");
             }
         }
 

@@ -4,14 +4,16 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Kernel.BFHAdmin.Common;
+using Kernel.BFHAdmin.Common.Interfaces;
 using Newtonsoft.Json;
 using PropertyChanging;
 
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 {
 
-    public class PlayerScore : NotifyPropertyBase
+    public class PlayerScore : NotifyPropertyBase, ITypeCloneable<PlayerScore>
     {
+        // Note: When adding/removing fields you also need to update fields in both Clone() and -() methods.
         private int _rank;
         private int _score;
         private int _deaths;
@@ -218,7 +220,38 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 
         public PlayerScore Clone()
         {
-            return JsonConvert.DeserializeObject<PlayerScore>(JsonConvert.SerializeObject(this));
+            return (PlayerScore)this.MemberwiseClone();
         }
+
+        public static PlayerScore operator -(PlayerScore a, PlayerScore b)
+        {
+            // Produce a delta object containing differences
+            var ret = new PlayerScore();
+            ret.Rank = a.Rank - b.Rank;
+            ret.Score = a.Score - b.Score;
+            ret.Deaths = a.Deaths - b.Deaths;
+            ret.Kills = a.Kills - b.Kills;
+            ret.Suicides = a.Suicides - b.Suicides;
+            ret.CpNeutralizeAssists = a.CpNeutralizeAssists - b.CpNeutralizeAssists;
+            ret.CpNeutralizes = a.CpNeutralizes - b.CpNeutralizes;
+            ret.CpAssists = a.CpAssists - b.CpAssists;
+            ret.CpDefends = a.CpDefends - b.CpDefends;
+            ret.CpCaptures = a.CpCaptures - b.CpCaptures;
+            ret.TeamVehicleDamages = a.TeamVehicleDamages - b.TeamVehicleDamages;
+            ret.TeamDamages = a.TeamDamages - b.TeamDamages;
+            ret.Revives = a.Revives - b.Revives;
+            ret.TargetAssists = a.TargetAssists - b.TargetAssists;
+            ret.PassengerAssists = a.PassengerAssists - b.PassengerAssists;
+            ret.DamageAssists = a.DamageAssists - b.DamageAssists;
+            ret.TeamKills = a.TeamKills - b.TeamKills;
+
+            return ret;
+        }
+
+        public override string ToString()
+        {
+            return Score.ToString();
+        }
+
     }
 }

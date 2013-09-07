@@ -31,25 +31,23 @@ namespace Kernel.BFHAdmin.Client.GUI
 
         private async void Test()
         {
+
             rconModel = new RconModel(Dispatcher);
-            rconModel.RconClient.ReceivedUnhandledLine += ClientOnReceivedLine;
+            
             rconModel.Start();
 
             this.DataContext = rconModel;
+
+            // Register all views so they can hook up to events
+            ViewChatWindow.Register(rconModel);
+            ViewCommandConsole.Register(rconModel);
+            ViewDebugDataModel.Register(rconModel);
+            ViewDebugLog.Register(rconModel);
+            ViewPlayerList.Register(rconModel);
         }
 
-        private void ClientOnReceivedLine(object sender, string line)
-        {
-            Dispatcher.Invoke(() => txtOut.AppendText(line + "\r\n"));
-        }
+ 
 
-        private void txtIn_KeyUp(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
-            {
-                e.Handled = true;
-                rconModel.RconClient.SendRaw(txtIn.Text);
-            }
-        }
+     
     }
 }

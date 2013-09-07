@@ -4,18 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Kernel.BFHAdmin.Common;
+using Kernel.BFHAdmin.Common.Interfaces;
 using Newtonsoft.Json;
 using PropertyChanging;
 
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 {
-    public class ChatHistoryItem : NotifyPropertyBase
+    public class ChatHistoryItem : NotifyPropertyBase, ITypeCloneable<ChatHistoryItem>
     {
         private string _message;
         private string _type;
         private string _what;
         private string _from;
         private int _number;
+        private string _timeStamp;
+
         public int Number
         {
             get { return _number; }
@@ -71,10 +74,21 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
             }
         }
 
+        public string TimeStamp
+        {
+            get { return _timeStamp; }
+            set
+            {
+                if (value == _timeStamp) return;
+                _timeStamp = value;
+                OnPropertyChanged();
+            }
+        }
+
 
         public ChatHistoryItem Clone()
         {
-            return JsonConvert.DeserializeObject<ChatHistoryItem>(JsonConvert.SerializeObject(this));
+            return (ChatHistoryItem)this.MemberwiseClone();
         }
     }
 }

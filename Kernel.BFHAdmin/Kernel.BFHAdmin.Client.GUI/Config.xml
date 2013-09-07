@@ -4,6 +4,8 @@
   <Section Name="Settings">
     <Key Name="RconServerAddress" Value="31.204.131.11" />
     <Key Name="RconServerPort" Value="8567" />
-    <Key Name="RconServerPassword" Value="SECRETPASSWORD" />
+    <Key Name="RconServerPassword" Value="YOUR_PASSWORD" />
+    <!-- Note: Currently not in use, default user (Admin) is always used. -->
+    <Key Name="RconServerUser" Value="Admin" />
   </Section>
 </Nini>

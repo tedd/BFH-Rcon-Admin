@@ -4,19 +4,37 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Kernel.BFHAdmin.Common;
+using Kernel.BFHAdmin.Common.Interfaces;
 using Newtonsoft.Json;
 using PropertyChanging;
 
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 {
 
-    public class Team : NotifyPropertyBase
+    public class Team : NotifyPropertyBase, ITypeCloneable<Team>
     {
         private int _count;
         private int _tickets;
         private int _startTickets;
         private int _ticketState;
         private string _name;
+        private List<Player> _players = new List<Player>();
+        public IEnumerable<Player> Players
+        {
+            get
+            {
+                List<Player> players;
+                lock (_players)
+                {
+                    players = new List<Player>(_players);
+                }
+                foreach (var player in players)
+                {
+                    yield return player;
+                }
+            }
+        }
+
         public string Name
         {
             get { return _name; }
@@ -74,8 +92,42 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 
         public Team Clone()
         {
-            return JsonConvert.DeserializeObject<Team>(JsonConvert.SerializeObject(this));
+            return (Team)this.MemberwiseClone();
+        }
+
+        public static Team operator -(Team a, Team b)
+        {
+            // Produce a delta object containing differences
+            var ret = new Team();
+            ret.Count = a.Count - b.Count;
+            ret.StartTickets = a.StartTickets - b.StartTickets;
+            //ret.TicketState = (a.TicketState == b.TicketState ? 0 : b.TicketState);
+            return ret;
+        }
+
+        internal void AddPlayer(Player player)
+        {
+            lock (_players)
+            {
+                if (!_players.Contains(player))
+                {
+                    _players.Add(player);
+                    OnPropertyChanged("Players");
+                }
+            }
+        }
+
+        internal void RemovePlayer(Player player)
+        {
+            lock (_players)
+            {
+                if (_players.Contains(player))
+                {
+                    _players.Remove(player);
+                    OnPropertyChanged("Players");
+                }
+            }
         }
     }
-   
+
 }
