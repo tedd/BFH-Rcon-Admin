@@ -32,12 +32,20 @@ namespace Kernel.BFHAdmin.Client.GUI.Views
         public void Register(RconModel rconModel)
         {
             _rconModel = rconModel;
-            _rconModel.RconClient.ClientChatBufferCommand.ChatLineReceived += ClientChatBufferCommandOnChatLineReceived;
+            _rconModel.NewClient +=
+                (sender, client) =>
+                    { client.ClientChatBufferCommand.ChatLineReceived += ClientChatBufferCommandOnChatLineReceived; };
         }
 
         private void ClientChatBufferCommandOnChatLineReceived(object sender, ChatHistoryItem chatHistoryItem)
         {
-            WriteLine(string.Format("<{0}> {1}", chatHistoryItem.From, chatHistoryItem.Message), Brushes.Black);
+            WriteLine(string.Format("{0} {1} {2} <{3} -> {4}> {5}", 
+                chatHistoryItem.TimeStamp,
+                chatHistoryItem.Type,
+                chatHistoryItem.Number,
+                chatHistoryItem.From, 
+                chatHistoryItem.What, 
+                chatHistoryItem.Message), Brushes.Black);
         }
 
         private Paragraph WriteLine(string line, Brush foreground)

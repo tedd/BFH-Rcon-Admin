@@ -20,6 +20,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{2AED5B
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kernel.BFHAdmin.Module.DataStore", "Kernel.BFHAdmin.Module.DataStore\Kernel.BFHAdmin.Module.DataStore.csproj", "{4DACD962-61FB-4D6F-8979-99A5E8266AEF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -46,6 +48,10 @@ Global
 		{D9C36881-7C7E-4525-AAA6-FF696185C882}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D9C36881-7C7E-4525-AAA6-FF696185C882}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D9C36881-7C7E-4525-AAA6-FF696185C882}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DACD962-61FB-4D6F-8979-99A5E8266AEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DACD962-61FB-4D6F-8979-99A5E8266AEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DACD962-61FB-4D6F-8979-99A5E8266AEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DACD962-61FB-4D6F-8979-99A5E8266AEF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

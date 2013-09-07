@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,18 +9,24 @@ using Kernel.BFHAdmin.Common;
 using Kernel.BFHAdmin.Common.Interfaces;
 using Newtonsoft.Json;
 using PropertyChanging;
+using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 {
 
     public class Team : NotifyPropertyBase, ITypeCloneable<Team>
     {
+        [Key]
+        public int Id { get; set; }
+
         private int _count;
         private int _tickets;
         private int _startTickets;
         private int _ticketState;
         private string _name;
         private List<Player> _players = new List<Player>();
+        [NotMapped]
+        [ExpandableObject()]
         public IEnumerable<Player> Players
         {
             get
@@ -34,7 +42,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
                 }
             }
         }
-
+        
         public string Name
         {
             get { return _name; }
@@ -101,6 +109,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
             var ret = new Team();
             ret.Count = a.Count - b.Count;
             ret.StartTickets = a.StartTickets - b.StartTickets;
+            ret.Name = a.Name;
             //ret.TicketState = (a.TicketState == b.TicketState ? 0 : b.TicketState);
             return ret;
         }

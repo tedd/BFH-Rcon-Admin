@@ -30,6 +30,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="EntityFramework">
+      <HintPath>..\packages\EntityFramework.5.0.0\lib\net45\EntityFramework.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -40,8 +43,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HighlightNotifier.cs" />
-    <Compile Include="Models\PlayerCache.cs" />
-    <Compile Include="Models\PlayerHistoryItem.cs" />
     <Compile Include="PlayerEvents.cs" />
     <Compile Include="PreGame.cs" />
     <Compile Include="PlayerHighlightNotifier.cs" />
@@ -55,6 +56,10 @@
     <ProjectReference Include="..\Kernel.BFHAdmin.Common\Kernel.BFHAdmin.Common.csproj">
       <Project>{70CD2F38-53A0-4658-95D9-DA08C140408D}</Project>
       <Name>Kernel.BFHAdmin.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Kernel.BFHAdmin.Module.DataStore\Kernel.BFHAdmin.Module.DataStore.csproj">
+      <Project>{4dacd962-61fb-4d6f-8979-99a5e8266aef}</Project>
+      <Name>Kernel.BFHAdmin.Module.DataStore</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

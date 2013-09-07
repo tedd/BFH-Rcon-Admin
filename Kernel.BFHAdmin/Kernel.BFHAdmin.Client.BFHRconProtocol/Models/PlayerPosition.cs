@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -12,11 +13,16 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
     public class PlayerPosition : NotifyPropertyBase, ITypeCloneable<PlayerPosition>, IEqualityComparer<PlayerPosition>
     {
         private char[] coma = ",".ToCharArray();
-        private string _text;
+        private string _text = "";
         private decimal _x;
         private decimal _y;
         private decimal _z;
-        public string Text { get { return _text; } }
+        [Key]
+        public string Text
+        {
+            get { return _text; }
+            set { ParseFrom(value); }
+        }
         public decimal X
         {
             get { return _x; }

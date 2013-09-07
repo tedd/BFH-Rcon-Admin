@@ -1,15 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Models;
 using Kernel.BFHAdmin.Common;
 
-namespace Kernel.BFHAdmin.Module.DefaultScript.Models
+namespace Kernel.BFHAdmin.Module.DataStore.Models
 {
     public class PlayerHistoryItem: NotifyPropertyBase
     {
+        [Key]
+        public int Id { get; set; }
+
         private DateTime _time = DateTime.Now;
 
         public DateTime Time

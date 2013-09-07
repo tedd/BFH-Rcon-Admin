@@ -188,6 +188,10 @@
       <Project>{70cd2f38-53a0-4658-95d9-da08c140408d}</Project>
       <Name>Kernel.BFHAdmin.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Kernel.BFHAdmin.Module.DataStore\Kernel.BFHAdmin.Module.DataStore.csproj">
+      <Project>{4dacd962-61fb-4d6f-8979-99a5e8266aef}</Project>
+      <Name>Kernel.BFHAdmin.Module.DataStore</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Kernel.BFHAdmin.Module.DefaultScript\Kernel.BFHAdmin.Module.DefaultScript.csproj">
       <Project>{d6c55d39-d8be-40f3-a4f9-67c1575e0c9e}</Project>
       <Name>Kernel.BFHAdmin.Module.DefaultScript</Name>
@@ -199,6 +203,7 @@
   <ItemGroup>
     <None Include="Config.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </None>
   </ItemGroup>
   <ItemGroup>

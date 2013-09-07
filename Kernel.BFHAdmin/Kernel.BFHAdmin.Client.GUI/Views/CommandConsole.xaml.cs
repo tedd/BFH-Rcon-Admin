@@ -33,7 +33,10 @@ namespace Kernel.BFHAdmin.Client.GUI.Views
         public void Register(RconModel rconModel)
         {
             _rconModel = rconModel;
-            _rconModel.RconClient.ReceivedUnhandledLine += RconClientOnReceivedUnhandledLine;
+            _rconModel.NewClient +=
+                (sender, client) =>
+                { client.ReceivedUnhandledLine += RconClientOnReceivedUnhandledLine; };
+            
         }
 
         private void RconClientOnReceivedUnhandledLine(object sender, string line)

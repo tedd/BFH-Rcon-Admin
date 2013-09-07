@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,9 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 {
     public class ChatHistoryItem : NotifyPropertyBase, ITypeCloneable<ChatHistoryItem>
     {
+        [Key]
+        public int Id { get; set; }
+
         private string _message;
         private string _type;
         private string _what;

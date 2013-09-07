@@ -71,7 +71,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
             RconClient.EnqueueCommand(qi);
             var lines = await qi.TaskCompletionSource.Task;
             int added = 0, removed = 0;
-
+            DateTime updateTimestamp = DateTime.Now;
             // Process result
             OnPlayerUpdateStart();
             var _plPlayerDiff = new Dictionary<Player, bool>();
@@ -141,14 +141,15 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                 p.Score.Score = int.Parse(plSplit[37]);
                 p.VehicleName = plSplit[38];
                 p.Score.Rank = int.Parse(plSplit[39]);
-                p.Position.ParseFrom(plSplit[40]);
+                p.PositionString = plSplit[40];
                 p.IdleTime = int.Parse(plSplit[41]); //ki.idleTime
                 p.Cdkeyhash = plSplit[42];
                 p.TkData_Punished = Utils.BoolParse(plSplit[43]); //tkData.punished
                 p.TkData_TimesPunished = int.Parse(plSplit[44]); //tkData.timesPunished
                 p.TkData_TimesForgiven = int.Parse(plSplit[45]); //tkData.timesForgiven
                 p.Vip = Utils.BoolParse(plSplit[46]);
-                p.NucleusId = plSplit[47];
+                p.NucleusId = Int64.Parse(plSplit[47]);
+                p.LastUpdate = updateTimestamp;
                 if (newPlayer)
                 {
                     RconClient.ServerInfoCommand.ServerInfo.Team1.AddPlayer(p);

@@ -34,7 +34,7 @@ namespace Kernel.BFHAdmin.Client.GUI
 
             rconModel = new RconModel(Dispatcher);
             
-            rconModel.Start();
+            rconModel.Connect();
 
             this.DataContext = rconModel;
 

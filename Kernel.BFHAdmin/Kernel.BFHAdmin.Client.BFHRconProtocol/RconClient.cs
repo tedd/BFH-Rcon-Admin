@@ -28,7 +28,7 @@ using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 namespace Kernel.BFHAdmin.Client.BFHRconProtocol
 {
     //[ImplementPropertyChanging]
-    public class RconClient : NotifyPropertyBase
+    public class RconClient : NotifyPropertyBase, IDisposable
     {
         //http://www.battlefieldheroes.com/en/forum/showthread.php?tid=193367
         // http://www.battlefieldheroes.com/en/forum/archive/index.php/thread-331640.html
@@ -50,7 +50,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
         public int Port { get; private set; }
         public string Password { get; private set; }
 
-        public bool DebugProtocolData = true;
+        public bool DebugProtocolData = false;
 
         //private int _defaultCommandTimeoutMs = 1000;
         //public int DefaultCommandTimeoutMs
@@ -248,7 +248,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
         {
             log.Debug("RconClient startup");
             Random rnd = new Random();
-            _doneCommand = "$^!(\"done."+rnd.Next(0,int.MaxValue) + ".done\")!^$"; // Some random string that won't show up in any of our data
+            _doneCommand = "$^!(\"done." + rnd.Next(0, int.MaxValue) + ".done\")!^$"; // Some random string that won't show up in any of our data
             PlayerListCommand = new PlayerListCommand(this);
             ServerInfoCommand = new ServerInfoCommand(this);
             //GetAdminListCommand = new GetAdminListCommand(this);
@@ -427,7 +427,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
                             CurrentStateWaitingForFirst = true;
                             //CurrentStateTimeout = DateTime.Now.AddMilliseconds(DefaultCommandTimeoutMs);
                             log.Trace("WriteLoop(): Sending command: \"" + cmd.Command + "\"");
-                            Write(cmd.Command + "\n" + "\x002" + _doneCommand +"\n");
+                            Write(cmd.Command + "\n" + "\x002" + _doneCommand + "\n");
                         }
                     }
                 }
@@ -442,8 +442,18 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
             {
                 if (!_connected)
                     return;
+                string line;
+                try
+                {
+                    line = await streamReader.ReadLineAsync();
+                }
+                catch (Exception exception)
+                {
+                    log.ErrorException("ReadLoop(): streamReader.ReadLineAsync: ", exception);
+                    Disconnect();
+                    break;
+                }
 
-                string line = await streamReader.ReadLineAsync();
                 if (line == null || !socket.Connected)
                 {
                     Disconnect();
@@ -484,7 +494,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
             OnReceivedLine(line);
 
             // Command completed?
-            bool currentStateDone = line.Contains("unknown command: '"+ _doneCommand + "'");
+            bool currentStateDone = line.Contains("unknown command: '" + _doneCommand + "'");
 
             switch (CurrentState)
             {
@@ -576,8 +586,19 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
         private async void Write(string str)
         {
             log.Trace("Write(): " + str);
-            await streamWriter.WriteAsync("\x002" + str);
-            await streamWriter.FlushAsync();
+            if (DebugProtocolData)
+                log.Trace("Write(): " + str);
+            try
+            {
+                await streamWriter.WriteAsync("\x002" + str);
+                await streamWriter.FlushAsync();
+            }
+            catch (Exception exception)
+            {
+                log.ErrorException("ReadLoop(): streamReader.ReadLineAsync: ", exception);
+                Disconnect();
+            }
+
             //          byte[] outBuffer = Wrap4Rcon(str);
             //            await networkStream.WriteAsync(outBuffer, 0, outBuffer.Length);
             //            await networkStream.FlushAsync();
@@ -598,22 +619,48 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
 
         public void Disconnect()
         {
-            log.Trace("Disconnect(): Start");
-            if (_pollingTimerCancelAction != null)
+            lock (this)
             {
-                _pollingTimerCancelAction.Invoke();
-                _pollingTimerCancelAction = null;
+                log.Info("Disconnect()");
+                log.Trace("Disconnect(): Start");
+                _connected = false;
+                if (_pollingTimerCancelAction != null)
+                {
+                    _pollingTimerCancelAction.Invoke();
+                    _pollingTimerCancelAction = null;
+                }
+                if (networkStream != null)
+                {
+                    networkStream.Close(100);
+                    networkStream = null;
+                }
+                if (socket != null)
+                {
+                    socket.Close(100);
+//                    socket.Disconnect(false);
+                    socket = null;
+                }
+                if (streamReader != null)
+                {
+                    streamReader.Close();
+                    streamReader = null;
+                }
+                if (streamWriter != null)
+                {
+                    streamWriter.Close();
+                    streamWriter = null;
+                }
+                
+                log.Trace("Disconnect(): End");
+                OnDisconnected();
             }
-            _connected = false;
-            networkStream.Close(100);
-            socket.Disconnect(false);
-            socket = null;
-            networkStream = null;
-            log.Trace("Disconnect(): End");
-            OnDisconnected();
         }
 
-     
+
+        public void Dispose()
+        {
+            Disconnect();
+        }
     }
 }
 

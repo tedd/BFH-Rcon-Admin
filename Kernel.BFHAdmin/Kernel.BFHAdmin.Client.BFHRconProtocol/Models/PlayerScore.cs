@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,8 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 
     public class PlayerScore : NotifyPropertyBase, ITypeCloneable<PlayerScore>
     {
+        [Key]
+        public int Id { get; set; }
         // Note: When adding/removing fields you also need to update fields in both Clone() and -() methods.
         private int _rank;
         private int _score;

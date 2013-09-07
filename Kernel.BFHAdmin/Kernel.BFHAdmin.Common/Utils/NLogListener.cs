@@ -35,7 +35,7 @@ namespace Kernel.BFHAdmin.Common.Utils
 
             config.AddTarget(_targetId, this);
             this.Layout = "${date:format=HH\\:MM\\:ss} ${logger} ${message} ${exception:format=tostring}";
-            _loggingRule = new LoggingRule("*", LogLevel.Trace, this);
+            _loggingRule = new LoggingRule("*", LogLevel.Debug, this);
             config.LoggingRules.Add(_loggingRule);
             
             LogManager.Configuration = config;

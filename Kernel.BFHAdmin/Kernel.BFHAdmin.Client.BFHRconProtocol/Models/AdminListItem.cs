@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,9 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 {
     public class AdminListItem : NotifyPropertyBase, ITypeCloneable<AdminListItem>
     {
+        [Key]
+        public int Id { get; set; }
+
         private int _port;
         private string _address;
         private string _name;

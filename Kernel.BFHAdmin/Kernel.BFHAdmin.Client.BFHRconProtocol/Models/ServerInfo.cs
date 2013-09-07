@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,13 +15,14 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
 {
     public class ServerInfo : NotifyPropertyBase, ITypeCloneable<ServerInfo>
     {
+        [Key]
+        public int Id { get; set; }
         public enum GameStatus
         {
             Unknown = 0,
             Running = 1,
             EndScreen = 2
         }
-
         private Team _team1 = new Team();
         private Team _team2 = new Team();
         private int _currentRound;

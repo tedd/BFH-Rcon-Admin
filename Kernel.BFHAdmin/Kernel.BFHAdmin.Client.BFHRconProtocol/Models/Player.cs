@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,11 +17,13 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
     public class Player : NotifyPropertyBase, ITypeCloneable<Player>
     {
         // Note: When adding/removing fields you also need to update fields in both Clone() and -() methods.
+        [Key]
+        public int Id { get; set; }
 
         private PlayerScore _score = new PlayerScore();
         private PlayerPosition _position = new PlayerPosition();
         private int _vehicleType;
-        private string _nucleusId;
+        private long _nucleusId;
         private bool _vip;
         private string _unknown2;
         private string _unknown1;
@@ -53,6 +57,8 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
         private string _kit;
         private string _fullName;
         private Team _team;
+        private string _positionString;
+        private DateTime _lastUpdate = new DateTime(1970, 01, 01);
 
         public static Player operator -(Player a, Player b)
         {
@@ -86,7 +92,20 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
             ret.Score = a.Score - b.Score;
             ret.Position = a.Position - b.Position;
 
+            ret.LastUpdate = DateTime.Now;
+
             return ret;
+        }
+
+        public DateTime LastUpdate
+        {
+            get { return _lastUpdate; }
+            set
+            {
+                if (value.Equals(_lastUpdate)) return;
+                _lastUpdate = value;
+                OnPropertyChanged();
+            }
         }
 
         public string Kit
@@ -171,7 +190,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
                 OnPropertyChanged();
             }
         }
-    
+
         [ExpandableObject()]
         public Team Team
         {
@@ -449,7 +468,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
             }
         }
 
-        public string NucleusId
+        public long NucleusId
         {
             get { return _nucleusId; }
             set
@@ -470,7 +489,9 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
                 OnPropertyChanged();
             }
         }
+
         [ExpandableObject()]
+        [NotMapped]
         public PlayerPosition Position
         {
             get { return _position; }
@@ -482,12 +503,24 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
             }
         }
 
+        public string PositionString
+        {
+            get { return _positionString; }
+            set
+            {
+                if (value == _positionString) return;
+                _positionString = value;
+                Position.ParseFrom(PositionString);
+                OnPropertyChanged();
+            }
+        }
+
 
         public Player Clone()
         {
             var newObj = (Player)this.MemberwiseClone();
             newObj.Score = this.Score.Clone();
-            newObj.Position = this.Position.Clone();
+            newObj.PositionString = this.PositionString;
             return newObj;
         }
 
