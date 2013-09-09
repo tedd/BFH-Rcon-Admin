@@ -17,6 +17,8 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
         private static Logger log = LogManager.GetCurrentClassLogger();
 
         public RconClient RconClient { get; private set; }
+
+        private bool _inRound { get; set; }
         
         [ExpandableObject()]
         public ServerInfo ServerInfo
@@ -87,7 +89,9 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                 ServerInfo.Players = int.Parse(siSplit[3]);
                 ServerInfo.Joining = int.Parse(siSplit[4]);
                 ServerInfo.MapName = siSplit[5];
+                ServerInfo.MapInfo = RconClient.GetMapInfoFromName(siSplit[5]);
                 ServerInfo.NextMapName = siSplit[6];
+                ServerInfo.NextMapInfo = RconClient.GetMapInfoFromName(siSplit[6]);
                 ServerInfo.ServerName = siSplit[7];
                 ServerInfo.Team1.Name = siSplit[8];
                 ServerInfo.Team1.TicketState = int.Parse(siSplit[9]);
@@ -102,6 +106,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                 ServerInfo.ElapsedRoundTime = int.Parse(siSplit[18]);
                 ServerInfo.RemainingTime = int.Parse(siSplit[19]);
                 ServerInfo.GameMode = siSplit[20];
+                ServerInfo.GameModeType = (ServerInfo.GameType)Enum.Parse(typeof(ServerInfo.GameType), siSplit[20]);
                 ServerInfo.ModDir = siSplit[21];
                 ServerInfo.WorldSize = siSplit[22];
                 ServerInfo.TimeLimit = int.Parse(siSplit[23]);
@@ -118,17 +123,44 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
 
                 OnServerInfoUpdated(ServerInfo);
 
+                // Round ends when:
+                // gpm_tdm  - Team tickets reach 0
+                // gpm_ctf  - Team tickets reach 0
+                // gpm_hoth - Team tickets reach 0
+
+                if (_lastElapsedRoundTime > ServerInfo.ElapsedRoundTime)
+                {
+                    // Round time has decreased, new round
+                }
+                if (ServerInfo.CurrentGameStatus != ServerInfo.GameStatus.EndScreen && ServerInfo.Team1.Tickets > 0 && ServerInfo.Team2.Tickets > 0)
+                {
+                    if (!_inRound && _lastElapsedRoundTime > ServerInfo.ElapsedRoundTime)
+                    {
+                        // Round starting (and we have seen a previous round)
+                        OnRoundStart(_lastRoundServerInfo);
+                    }
+                    _inRound = true;
+                }
+                else
+                {
+                    if (_inRound)
+                    {
+                        // Round done
+                        OnRoundEnd(_lastRoundServerInfo);
+                    }
+                    _inRound = false;
+                }
+
                 //if (_lastElapsedRoundTime > ServerInfo.ElapsedRoundTime)
-                if (_lastElapsedRoundTime>ServerInfo.ElapsedRoundTime || _lastRoundServerInfo != null && ServerInfo.CurrentGameStatus != _lastRoundServerInfo.CurrentGameStatus)
+                if (_lastElapsedRoundTime>ServerInfo.ElapsedRoundTime || (_lastRoundServerInfo != null && ServerInfo.CurrentGameStatus != _lastRoundServerInfo.CurrentGameStatus))
                 {
                     switch (ServerInfo.CurrentGameStatus)
                     {
                         case ServerInfo.GameStatus.Running:
-                            OnRoundStart(_lastRoundServerInfo);
+//                            OnRoundStart(_lastRoundServerInfo);
                             break;
                         case ServerInfo.GameStatus.EndScreen:
-                            OnRoundEnd(_lastRoundServerInfo);
-                            
+                            // Doesn't work
                             break;
                     }
 

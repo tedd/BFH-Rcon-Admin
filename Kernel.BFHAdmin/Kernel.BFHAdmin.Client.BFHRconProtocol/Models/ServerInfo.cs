@@ -23,8 +23,15 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
             Running = 1,
             EndScreen = 2
         }
-        private Team _team1 = new Team();
-        private Team _team2 = new Team();
+        public enum GameType
+        {
+            Unknown = 0,
+            gpm_tdm = 1,
+            gpm_hoth = 2,
+            gpm_ctf = 4
+        }
+        private Team _team1 = new Team() { TeamId = 1 };
+        private Team _team2 = new Team() { TeamId = 2 };
         private int _currentRound;
         private int _totalRounds;
         private int _reservedSlots;
@@ -35,6 +42,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
         private string _worldSize;
         private string _modDir;
         private string _gameMode;
+        private GameType _gameModeType;
         private int _remainingTime;
         private int _elapsedRoundTime;
         private string _unknown1;
@@ -48,6 +56,8 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
         private GameStatus _currentGameStatus;
         private string _version;
         private bool _isPregame;
+        private MapInfo _mapInfo;
+        private MapInfo _nextMapInfo;
 
         [ExpandableObject()]
         public Team Team1
@@ -215,6 +225,17 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
             }
         }
 
+        public GameType GameModeType
+        {
+            get { return _gameModeType; }
+            set
+            {
+                if (value == _gameModeType) return;
+                _gameModeType = value;
+                OnPropertyChanged();
+            }
+        }
+
         public string ModDir
         {
             get { return _modDir; }
@@ -321,6 +342,30 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
             {
                 if (value.Equals(_isPregame)) return;
                 _isPregame = value;
+                OnPropertyChanged();
+            }
+        }
+
+        [ExpandableObject()]
+        public MapInfo MapInfo
+        {
+            get { return _mapInfo; }
+            set
+            {
+                if (Equals(value, _mapInfo)) return;
+                _mapInfo = value;
+                OnPropertyChanged();
+            }
+        }
+
+        [ExpandableObject()]
+        public MapInfo NextMapInfo
+        {
+            get { return _nextMapInfo; }
+            set
+            {
+                if (Equals(value, _nextMapInfo)) return;
+                _nextMapInfo = value;
                 OnPropertyChanged();
             }
         }

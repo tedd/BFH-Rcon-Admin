@@ -33,6 +33,10 @@
     <Reference Include="EntityFramework">
       <HintPath>..\packages\EntityFramework.5.0.0\lib\net45\EntityFramework.dll</HintPath>
     </Reference>
+    <Reference Include="NLog, Version=2.0.1.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\NLog.2.0.1.2\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -42,8 +46,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PlayerCommands.cs" />
     <Compile Include="HighlightNotifier.cs" />
-    <Compile Include="PlayerEvents.cs" />
+    <Compile Include="PlayerCacheAndHistory.cs" />
     <Compile Include="PreGame.cs" />
     <Compile Include="PlayerHighlightNotifier.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

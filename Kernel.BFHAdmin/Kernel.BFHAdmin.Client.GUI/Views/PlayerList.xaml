@@ -4,8 +4,12 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:xctk="clr-namespace:Xceed.Wpf.Toolkit.PropertyGrid;assembly=Xceed.Wpf.Toolkit"
+             xmlns:converters="clr-namespace:Kernel.BFHAdmin.Client.GUI.Converters"
              mc:Ignorable="d" 
              d:DesignHeight="300" d:DesignWidth="300">
+    <UserControl.Resources>
+        <converters:TeamToColorConverter x:Key="TeamConverter" />
+    </UserControl.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="10*"/>
@@ -21,77 +25,77 @@
                     <GridViewColumn Header="Name" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Name}" />
+                                <TextBlock Text="{Binding Name}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="Level" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Score.Rank}" />
+                                <TextBlock Text="{Binding Score.Rank}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="Ping" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Ping}" />
+                                <TextBlock Text="{Binding Ping}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="Team" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Team.Name}" />
+                                <TextBlock Text="{Binding Team.Name}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="Score" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Score.Score}" />
+                                <TextBlock Text="{Binding Score.Score}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="Kills" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Score.Kills}" />
+                                <TextBlock Text="{Binding Score.Kills}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="Deaths" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Score.Deaths}" />
+                                <TextBlock Text="{Binding Score.Deaths}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="Kit" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Score.Deaths}" />
+                                <TextBlock Text="{Binding Kit}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="Flag" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding IsFlagholder}" Style="{x:Null}" />
+                                <CheckBox IsChecked="{Binding IsFlagholder}" Style="{x:Null}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="Kit" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Kit}" />
+                                <TextBlock Text="{Binding Kit}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="VIP" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <CheckBox IsChecked="{Binding Vip}" Style="{x:Null}" />
+                                <CheckBox IsChecked="{Binding Vip}" Style="{x:Null}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

@@ -144,6 +144,8 @@ namespace Kernel.BFHAdmin.Client.GUI
         private void RconClientOnConnected(object sender)
         {
             //  RconClient.SendMessageAll("Kernel.BHFAdmin: Alpha 1 Online.");
+            //RconClient.SendMessageAll("Kernel.BHFAdmin: Alpha 1 Online.");
+            //RconClient.SendMessageAll("'KD' messages are in active development and will be buggy at times.");
             //RconClient.SendMessageAll("Kernel.BHFAdmin: Developer: Weathroz, tedd@konge.net.");
         }
 

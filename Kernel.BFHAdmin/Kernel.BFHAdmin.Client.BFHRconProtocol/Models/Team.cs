@@ -25,6 +25,8 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
         private int _ticketState;
         private string _name;
         private List<Player> _players = new List<Player>();
+        private int _teamId;
+
         [NotMapped]
         [ExpandableObject()]
         public IEnumerable<Player> Players
@@ -42,7 +44,18 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
                 }
             }
         }
-        
+
+        public int TeamId
+        {
+            get { return _teamId; }
+            set
+            {
+                if (value == _teamId) return;
+                _teamId = value;
+                OnPropertyChanged();
+            }
+        }
+
         public string Name
         {
             get { return _name; }

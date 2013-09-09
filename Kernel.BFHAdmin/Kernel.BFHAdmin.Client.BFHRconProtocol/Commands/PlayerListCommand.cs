@@ -186,6 +186,18 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
             }
             return null;
         }
+        public IEnumerable<Player> GetPlayers()
+        {
+            List<Player> players;
+            lock (_players)
+            {
+                players = new List<Player>(_players.Values);
+            }
+            foreach (var player in players)
+            {
+                yield return player;
+            }
+        }
 
     }
 }

@@ -67,6 +67,7 @@
     <Compile Include="Interfaces\IAmAModule.cs" />
     <Compile Include="Models\AdminListItem.cs" />
     <Compile Include="Models\ChatHistoryItem.cs" />
+    <Compile Include="Models\MapInfo.cs" />
     <Compile Include="Models\PlayerPosition.cs" />
     <Compile Include="Models\RconClientConfig.cs" />
     <Compile Include="RconClient.cs" />

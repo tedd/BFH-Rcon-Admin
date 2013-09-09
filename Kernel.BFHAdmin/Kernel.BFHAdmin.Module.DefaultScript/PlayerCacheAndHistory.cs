@@ -14,11 +14,11 @@ using Kernel.BFHAdmin.Module.DataStore.Models;
 
 namespace Kernel.BFHAdmin.Module.DefaultScript
 {
-    public class PlayerEvents : IAmAModule
+    public class PlayerCacheAndHistory : IAmAModule
     {
         private RconClient _rconClient;
         //private PlayerStorage _playerStorage;
-        public static PlayerEvents Current { get; private set; }
+        public static PlayerCacheAndHistory Current { get; private set; }
         private Dictionary<Player, PlayerCache> _players = new Dictionary<Player, PlayerCache>();
 
         public delegate void PlayerUpdatedDelegate(object sender, PlayerCache playerCache);
@@ -29,16 +29,16 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             if (handler != null) handler(this, playerCache);
         }
 
-        public delegate void RegisteredDelegate(PlayerEvents playerEvents);
+        public delegate void RegisteredDelegate(PlayerCacheAndHistory playerEvents);
         public static event RegisteredDelegate Registered;
 
-        protected virtual void OnRegistered(PlayerEvents playerevents)
+        protected virtual void OnRegistered(PlayerCacheAndHistory playerevents)
         {
             RegisteredDelegate handler = Registered;
             if (handler != null) handler(playerevents);
         }
 
-        public PlayerEvents()
+        public PlayerCacheAndHistory()
         {
             Current = this;
         }

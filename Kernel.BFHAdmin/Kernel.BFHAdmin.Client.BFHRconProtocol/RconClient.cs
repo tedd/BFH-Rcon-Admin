@@ -49,6 +49,16 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
         public string Address { get; private set; }
         public int Port { get; private set; }
         public string Password { get; private set; }
+        public Dictionary<string, MapInfo> MapInfo { get; private set; }
+        public MapInfo GetMapInfoFromName(string mapName)
+        {
+            lock (MapInfo)
+            {
+                if (MapInfo.ContainsKey(mapName))
+                    return MapInfo[mapName];
+            }
+            return null;
+        }
 
         public bool DebugProtocolData = false;
 
@@ -249,6 +259,11 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
             log.Debug("RconClient startup");
             Random rnd = new Random();
             _doneCommand = "$^!(\"done." + rnd.Next(0, int.MaxValue) + ".done\")!^$"; // Some random string that won't show up in any of our data
+
+            MapInfo = new Dictionary<string, MapInfo>();
+
+            AddMaps();
+
             PlayerListCommand = new PlayerListCommand(this);
             ServerInfoCommand = new ServerInfoCommand(this);
             //GetAdminListCommand = new GetAdminListCommand(this);
@@ -256,6 +271,93 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
             Command = new SimpleCommand(this);
 
             LoadModules();
+        }
+
+        private void AddMaps()
+        {
+            //
+            // Maps
+            //
+            // Normal:gpm_tdm
+            AddMapFromServerString("ss|SS:map seaside_skirmish gpm_tdm 16");
+            AddMapFromServerString("vv|VV:map village gpm_tdm 16");
+            AddMapFromServerString("bb|BB:map lake gpm_tdm 16");
+            AddMapFromServerString("cc|CC:map smack2 gpm_tdm 16");
+            AddMapFromServerString("rr|RR:map heat gpm_tdm 16");
+            AddMapFromServerString("ss2|SS2:map Mayhem gpm_tdm 16");
+            AddMapFromServerString("aa|AA:map woodlands gpm_tdm 16");
+            AddMapFromServerString("ww|WW:map wicked_wake gpm_tdm 16");
+            AddMapFromServerString("ff|FF:map river gpm_tdm 16");
+            AddMapFromServerString("pp|PP:map royal_rumble gpm_tdm 16");
+            AddMapFromServerString("ii|II:map dependant_day gpm_tdm 16");
+
+            // Night
+            AddMapFromServerString("ssn|SSn:map seaside_skirmish_night gpm_tdm 16");
+            AddMapFromServerString("bbn|BBn:map lake_night gpm_tdm 16");
+            AddMapFromServerString("ccn|CCn:map smack2_night gpm_tdm 16");
+
+            // Snow
+            AddMapFromServerString("aas|AAs:map woodlands_snow gpm_tdm 16");
+            AddMapFromServerString("rrs|RRs:map heat_snow gpm_tdm 16");
+            AddMapFromServerString("bbs|BBs:map lake_snow gpm_tdm 16");
+            AddMapFromServerString("ccs|CCs:map smack2_snow gpm_tdm 16");
+            AddMapFromServerString("vvs|VVs:map village_snow gpm_tdm 16");
+            AddMapFromServerString("mms|VVs:map ruin_snow gpm_ctf 16");
+
+            // Normal:gpm_hoth
+            AddMapFromServerString("mm|MM:map ruin gpm_hoth 16");
+            AddMapFromServerString("ssh|SSH:map seaside_skirmish gpm_hoth 16");
+            AddMapFromServerString("vvh|VVH:map village gpm_hoth 16");
+            AddMapFromServerString("bbh|BBH:map lake gpm_hoth 16");
+            AddMapFromServerString("cch|CCH:map smack2 gpm_hoth 16");
+            AddMapFromServerString("rrh|RRH:map heat gpm_hoth 16");
+            AddMapFromServerString("ss2h|SS2H:map Mayhem gpm_hoth 16");
+            AddMapFromServerString("aah|AAH:map woodlands gpm_hoth 16");
+            AddMapFromServerString("wwh|WWH:map wicked_wake gpm_hoth 16");
+            AddMapFromServerString("pph|PPH:map royal_rumble gpm_hoth 16");
+            AddMapFromServerString("iih|IIH:map dependant_day gpm_hoth 16");
+
+            // Night
+            AddMapFromServerString("ssnh|SSnH:map seaside_skirmish_night gpm_hoth 16");
+            AddMapFromServerString("bbnh|BBnH:map lake_night gpm_hoth 16");
+            AddMapFromServerString("ccnh|CCnH:map smack2_night gpm_hoth 16");
+
+            // Normal:gpm_ctf
+            AddMapFromServerString("vvc|VVC:map village gpm_ctf 16");
+            AddMapFromServerString("bbc|BBC:map lake gpm_ctf 16");
+            AddMapFromServerString("rrc|RRC:map heat gpm_ctf 16");
+            AddMapFromServerString("wwc|WWC:map wicked_wake gpm_ctf 16");
+            AddMapFromServerString("ss2c|SS2C:map Mayhem gpm_ctf 16");
+        }
+
+        private Regex serverStringMatch = new Regex(@"^(?<shortname>[^\|]+)\|(?<nametype>[^:]+:map)\s(?<name>\S+)\s(?<type>\S+)\s(?<players>\d+)$");
+        private void AddMapFromServerString(string serverString)
+        {
+            var m = serverStringMatch.Match(serverString);
+            if (!m.Success)
+                throw new Exception("Unrecognized server map string: " + serverString);
+            var shortname = m.Groups["shortname"].Value;
+            var nametype = m.Groups["nametype"].Value;
+            var name = m.Groups["name"].Value;
+            var type = (ServerInfo.GameType)Enum.Parse(typeof(ServerInfo.GameType), m.Groups["type"].Value); ;
+            var players = int.Parse(m.Groups["players"].Value);
+
+            lock (MapInfo)
+            {
+                var mapInfo = GetMapInfoFromName(name);
+                if (mapInfo == null)
+                {
+                    mapInfo = new MapInfo()
+                                  {
+                                      ShortName = shortname,
+                                      Name = name,
+                                      MaxPlayers = players,
+                                  };
+                    MapInfo.Add(name, mapInfo);
+                }
+                if (!mapInfo.GameTypes.Contains(type))
+                    mapInfo.GameTypes.Add(type);
+            }
         }
 
         private void LoadModules()
@@ -372,18 +474,72 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
             var c2 = new CancellationTokenSource();
             var c3 = new CancellationTokenSource();
             var c4 = new CancellationTokenSource();
-            _pollingTimerCancelAction = new Action(() =>
-                              {
-                                  c1.Cancel();
-                                  c2.Cancel();
-                                  c3.Cancel();
-                                  c4.Cancel();
-                              });
 
-            PeriodicTaskFactory.Start(() => PlayerListCommand.RefreshPlayerList(), cancelToken: c1.Token, intervalInMilliseconds: this.Config.PollIntervalMs_PlayerListCommand, delayInMilliseconds: 1000, synchronous: false);
-            PeriodicTaskFactory.Start(() => ServerInfoCommand.RefreshServerInfo(), cancelToken: c2.Token, intervalInMilliseconds: this.Config.PollIntervalMs_ServerInfoCommand, delayInMilliseconds: 1000, synchronous: false);
-            PeriodicTaskFactory.Start(() => ClientChatBufferCommand.RefreshClientChatBufferCommand(), cancelToken: c3.Token, intervalInMilliseconds: this.Config.PollIntervalMs_ClientChatBufferCommand, delayInMilliseconds: 1000, synchronous: false);
-            //PeriodicTaskFactory.Start(() => GetAdminListCommand.RefreshAdminList(), cancelToken: c4.Token, intervalInMilliseconds: this.Config.PollIntervalMs_AdminListCommand, delayInMilliseconds: 1000, synchronous: false);
+
+            Task.Run(async () =>
+                         {
+                             try
+                             {
+                                 await PeriodicTaskFactory.Start(
+                                     () => PlayerListCommand.RefreshPlayerList(),                               
+                                     cancelToken: c1.Token,
+                                     intervalInMilliseconds:
+                                    this.Config.PollIntervalMs_PlayerListCommand,
+                                    delayInMilliseconds: 1000, 
+                                    synchronous: true);
+                             }
+                             catch (OperationCanceledException operationCanceledException) { }
+                             catch (Exception exception) { }
+                         });
+            Task.Run(async () =>
+                         {
+                             try
+                             {
+                                 await PeriodicTaskFactory.Start(
+                                     () => 
+                                         ServerInfoCommand.RefreshServerInfo(), 
+                                        cancelToken: c2.Token, 
+                                        intervalInMilliseconds: this.Config.PollIntervalMs_ServerInfoCommand, 
+                                        delayInMilliseconds: 1000, 
+                                        synchronous: true);
+                             }
+                             catch (OperationCanceledException operationCanceledException) { }
+                             catch (Exception exception) { }
+                         });
+            Task.Run(async () =>
+             {
+                 try
+                 {
+                     await PeriodicTaskFactory.Start(
+                         () => 
+                             ClientChatBufferCommand.RefreshClientChatBufferCommand(), 
+                             cancelToken: c3.Token, 
+                             intervalInMilliseconds: this.Config.PollIntervalMs_ClientChatBufferCommand, 
+                             delayInMilliseconds: 1000, 
+                             synchronous: true);
+                 }
+                 catch (OperationCanceledException operationCanceledException) { }
+                 catch (Exception exception) { }
+             });
+            //Task.Run(async () =>
+            //{
+            //    try
+            //    {
+            //        await PeriodicTaskFactory.Start(() => GetAdminListCommand.RefreshAdminList(), cancelToken: c4.Token, intervalInMilliseconds: this.Config.PollIntervalMs_AdminListCommand, delayInMilliseconds: 1000, synchronous: true);
+            //    }
+            //    catch (OperationCanceledException operationCanceledException) { }
+            //});
+
+
+
+            _pollingTimerCancelAction = new Action(() =>
+            {
+                c1.Cancel();
+                c2.Cancel();
+                c3.Cancel();
+                c4.Cancel();
+            });
+
             //while (true)
             //{
             //    PlayerListCommand.RefreshPlayerList();
@@ -637,7 +793,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
                 if (socket != null)
                 {
                     socket.Close(100);
-//                    socket.Disconnect(false);
+                    //                    socket.Disconnect(false);
                     socket = null;
                 }
                 if (streamReader != null)
@@ -650,7 +806,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol
                     streamWriter.Close();
                     streamWriter = null;
                 }
-                
+
                 log.Trace("Disconnect(): End");
                 OnDisconnected();
             }

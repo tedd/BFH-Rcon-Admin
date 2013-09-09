@@ -8,14 +8,16 @@ using Kernel.BFHAdmin.Client.BFHRconProtocol;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Interfaces;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Models;
 using Kernel.BFHAdmin.Module.DataStore.Models;
+using NLog;
 
 namespace Kernel.BFHAdmin.Module.DefaultScript
 {
     public class PlayerHighlightNotifier : IAmAModule
     {
 
+        private static Logger log = LogManager.GetCurrentClassLogger();
         private RconClient _rconClient;
-        private PlayerEvents playerEvents;
+        private PlayerCacheAndHistory playerEvents;
         private int _minimumScoreToReport = 400;
         private TimeSpan _killPeriodLookbehind = new TimeSpan(0, 0, 0, 30);
         private TimeSpan _scoreReportHistory = new TimeSpan(0, 0, 0, 60);
@@ -23,21 +25,32 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
         private Queue<PlayerHistoryItem> _lastKills = new Queue<PlayerHistoryItem>();
         private int _lastkillsLength = 20;
         private bool _lookingForFirstKill = false;
+        private Player _lastTopKiller = null;
+        private Player _lastTopScorer = null;
+        private bool _canReportTopScoreAndKill = false;
         public void Register(RconClient rconClient)
         {
             _rconClient = rconClient;
             rconClient.ServerInfoCommand.RoundStart += ServerInfoCommandOnRoundStart;
             rconClient.ServerInfoCommand.RoundEnd += ServerInfoCommandOnRoundEnd;
+            rconClient.PlayerListCommand.PlayerUpdateDone += PlayerListCommandOnPlayerUpdateDone;
+        }
+
+        private void PlayerListCommandOnPlayerUpdateDone(object sender)
+        {
+            _canReportTopScoreAndKill = true;
         }
 
         public void ModuleLoadComplete()
         {
-            playerEvents = PlayerEvents.Current;
+            playerEvents = PlayerCacheAndHistory.Current;
             playerEvents.PlayerUpdated += PlayerEventsOnPlayerUpdated;
         }
 
         private void ServerInfoCommandOnRoundEnd(object sender, ServerInfo lastRoundServerInfo)
         {
+            //log.Fatal("PrintKillLabel queue size: " + _lastKills.Count);
+
             DateTime lastKillTime = DateTime.MinValue;
             var lastKillers = new List<PlayerHistoryItem>();
             while (_lastKills.Count > 0)
@@ -72,7 +85,7 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
                     nameStr = string.Join(", ", lastKillersUnique);
                 }
                 if (nameStr != null)
-                    nameStr += " and ";
+                    nameStr += " & ";
                 nameStr += lastLast;
                 _rconClient.SendMessageAll("KD: Last kill was by: " + nameStr);
             }
@@ -80,6 +93,8 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
 
         private void ServerInfoCommandOnRoundStart(object sender, ServerInfo lastRoundServerInfo)
         {
+            _lastTopKiller = null;
+            _lastTopScorer = null;
             _lastKills.Clear();
             _lookingForFirstKill = true;
         }
@@ -88,6 +103,68 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
         {
             PrintScore(playerCache);
             PrintKillLabel(playerCache);
+
+                PrintNewTopKiller(playerCache);
+                PrintNewTopScorer(playerCache);
+        }
+
+        private void PrintNewTopKiller(PlayerCache playerCache)
+        {
+
+            if (_lastTopKiller == null)
+            {
+                _lastTopKiller = playerCache.Player;
+                //foreach (var player in _rconClient.PlayerListCommand.GetPlayers())
+                //{
+                //    if (_lastTopKiller == null || player.Score.Kills > _lastTopKiller.Score.Kills)
+                //        _lastTopKiller = player;
+                //}
+            }
+
+            if (_lastTopKiller.Name != playerCache.Player.Name && playerCache.Player.Score.Kills > _lastTopKiller.Score.Kills)
+            {
+                if (_canReportTopScoreAndKill)
+                {
+                    _rconClient.SendMessagePlayer(playerCache.Player,
+                                                  "KD: You just replaced " + _lastTopKiller.Name +
+                                                  " as top killer this round.");
+                    _rconClient.SendMessagePlayer(playerCache.Player,
+                                                  "KD: You just got replaced as top killer by " +
+                                                  playerCache.Player.Name +
+                                                  ".");
+                }
+                _lastTopKiller = playerCache.Player;
+            }
+        }
+
+        private void PrintNewTopScorer(PlayerCache playerCache)
+        {
+            if (_lastTopScorer == null)
+            {
+                _lastTopScorer = playerCache.Player;
+                //foreach (var player in _rconClient.PlayerListCommand.GetPlayers())
+                //{
+                //    if (_lastTopScorer == null || player.Score.Score > _lastTopScorer.Score.Score)
+                //        _lastTopScorer = player;
+                //}
+            }
+
+            if (_lastTopScorer.Name != playerCache.Player.Name && playerCache.Player.Score.Kills > _lastTopScorer.Score.Kills)
+            {
+                if (_canReportTopScoreAndKill)
+                {
+
+                    _rconClient.SendMessagePlayer(playerCache.Player,
+                                                  "KD: You just replaced " + _lastTopScorer.Name +
+                                                  " as top scorer this round.");
+                    _rconClient.SendMessagePlayer(playerCache.Player,
+                                                  "KD: You just got replaced as top scorer by " +
+                                                  playerCache.Player.Name +
+                                                  ".");
+                }
+
+                _lastTopScorer = playerCache.Player;
+            }
         }
 
         private void PrintKillLabel(PlayerCache playerCache)
@@ -98,36 +175,45 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             if (playerCache.LastPlayerDelta.Score.Kills < 1)
                 return;
 
+
             var historyItems = new List<PlayerHistoryItem>(GetHistory(playerCache, _killPeriodLookbehind));
             if (historyItems.Count() == 0)
                 return;
-            DateTime oldestUpdate = historyItems[0].Player.LastUpdate;
 
             if (_lookingForFirstKill)
             {
                 _lookingForFirstKill = false;
                 _rconClient.SendMessageAll("KD: First kill: " + playerCache.Player.Name);
             }
-            
+
+            int kills = 0;
+            DateTime oldestUpdate = default(DateTime);
+            PlayerHistoryItem lastWithKill = null;
+            foreach (var historyItem in historyItems)
+            {
+                kills += historyItem.PlayerDelta.Score.Kills;
+                if (historyItem.PlayerDelta.Score.Kills > 0)
+                    lastWithKill = historyItem;
+            }
             // Last kill watch
-            _lastKills.Enqueue(historyItems[0]);
+            if (lastWithKill != null)
+            {
+                oldestUpdate = lastWithKill.Player.LastUpdate;
+                _lastKills.Enqueue(lastWithKill);
+            }
+            // Last kill queue length limit
             while (_lastKills.Count > _lastkillsLength)
             {
                 _lastKills.Dequeue();
             }
-            var timeSinceOldest = DateTime.Now.Subtract(oldestUpdate);
 
-            int kills = 0;
-            foreach (var historyItem in historyItems)
-            {
-                kills += historyItem.PlayerDelta.Score.Kills;
-            }
+            var timeSinceOldest = DateTime.Now.Subtract(oldestUpdate);
 
             // Message player
             if (kills > 2)
-                _rconClient.SendMessagePlayer(playerCache.Player, "Last " + (int)timeSinceOldest.TotalSeconds + " seconds: " + kills + " kills.");
+                _rconClient.SendMessagePlayer(playerCache.Player, "KD: Last " + (int)timeSinceOldest.TotalSeconds + " seconds: " + kills + " kills.");
             if (kills > 5)
-                _rconClient.SendMessageAll(playerCache.Player.Name + " killed " + kills + " in just " + (int)timeSinceOldest.TotalSeconds + " seconds.");
+                _rconClient.SendMessageAll("KD: " + playerCache.Player.Name + " has " + kills + " kills in just " + (int)timeSinceOldest.TotalSeconds + " seconds.");
         }
 
         private void PrintScore(PlayerCache playerCache)
@@ -167,7 +253,7 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
 
                 if ((int)timeSinceOldest.TotalSeconds != 0)
                     _rconClient.SendMessagePlayer(playerCache.Player,
-                                              "Score last " + (int)_scoreReportHistory.TotalSeconds + " seconds: " + score);
+                                              "KD: Score last " + (int)_scoreReportHistory.TotalSeconds + " seconds: " + score);
             }
 
 
