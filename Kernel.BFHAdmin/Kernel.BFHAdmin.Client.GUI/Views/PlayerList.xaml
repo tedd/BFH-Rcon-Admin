@@ -71,13 +71,6 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="Kit" Width="Auto">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding Kit}" Foreground="{Binding Team, Converter={StaticResource TeamConverter}}" />
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
                     <GridViewColumn Header="Flag" Width="Auto">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>

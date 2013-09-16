@@ -61,6 +61,28 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
 
         }
 
+        public List<PlayerCache> GetPlayersCache()
+        {
+            lock (_players)
+            {
+                return new List<PlayerCache>(_players.Values);
+            }
+        }
+        public PlayerCache GetPlayerCache(Player player)
+        {
+            lock (_players)
+            {
+                if (_players.ContainsKey(player))
+                    return _players[player];
+                foreach (var kvp in _players)
+                {
+                    if (kvp.Key.Name == player.Name)
+                        return kvp.Value;
+                }
+                return null;
+            }
+        }
+
         #region Player tracking
         private void PlayerListCommandOnPlayerJoined(object sender, Player player)
         {
@@ -80,17 +102,17 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
                 //else
                 //{
                 //    // Create PlayerCache in DB and save
-                    var dPlayer = new PlayerCache();
-                    dPlayer.Player = player;
-                    //_playerStorage.PlayerCaches.Add(dPlayer);
-                    //try
-                    //{
-                    //    _playerStorage.SaveChanges();
-                    //}
-                    //catch (Exception exception)
-                    //{
-                    //    Debug.WriteLine(exception.ToString());
-                    //}
+                var dPlayer = new PlayerCache();
+                dPlayer.Player = player;
+                //_playerStorage.PlayerCaches.Add(dPlayer);
+                //try
+                //{
+                //    _playerStorage.SaveChanges();
+                //}
+                //catch (Exception exception)
+                //{
+                //    Debug.WriteLine(exception.ToString());
+                //}
                 //}
 
                 _players.Add(player, dPlayer);
@@ -110,24 +132,27 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
         {
             lock (_players)
             {
-                // Take a snapshot and fire off event
-                _players[player].TakeHistorySnapshot();
-                
-                //// Save change do DB
-                //try
-                //{
-                //    _playerStorage.SaveChanges();
-                //}
-                //catch (Exception exception)
-                //{
-                //    Debug.WriteLine(exception.ToString());
-                //}
+                lock (_players[player])
+                {
+                    // Take a snapshot and fire off event
+                    _players[player].TakeHistorySnapshot();
 
-                OnPlayerUpdated(_players[player]);
+                    //// Save change do DB
+                    //try
+                    //{
+                    //    _playerStorage.SaveChanges();
+                    //}
+                    //catch (Exception exception)
+                    //{
+                    //    Debug.WriteLine(exception.ToString());
+                    //}
+
+                    OnPlayerUpdated(_players[player]);
+                }
             }
         }
         #endregion
 
-  
+
     }
 }

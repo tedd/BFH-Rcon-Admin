@@ -22,7 +22,6 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
 
         public void ModuleLoadComplete()
         {
-            
         }
 
         private void ServerInfoCommandOnRoundStart(object sender, ServerInfo lastRoundServerInfo)
@@ -38,6 +37,8 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             if (!_rconClient.ServerInfoCommand.ServerInfo.IsPregame)
                 return;
 
+            var playerCount = _rconClient.ServerInfoCommand.ServerInfo.Players;
+            _rconClient.SendMessageAll(player.Name + " just joined the fight. You are now " + playerCount + " players.");
             _rconClient.SendMessagePlayer(player, "Welcome to pre-game. In this mode widget use is FREE.");
             _rconClient.SendMessagePlayer(player, "Pre-game starts when there are less than two players on either team.");
             _rconClient.SendMessagePlayer(player, "Enjoy!");

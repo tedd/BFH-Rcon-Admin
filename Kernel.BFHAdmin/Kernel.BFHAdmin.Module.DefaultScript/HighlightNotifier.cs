@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Kernel.BFHAdmin.Client.BFHRconProtocol;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Interfaces;
 using Kernel.BFHAdmin.Client.BFHRconProtocol.Models;
+using Kernel.BFHAdmin.Common.Utils;
 
 namespace Kernel.BFHAdmin.Module.DefaultScript
 {
@@ -44,9 +45,14 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
         {
             var players = _rconClient.PlayerListCommand.GetPlayers();
             var mostKills = new List<string>();
+            var mostDeaths = new List<string>();
+            var mostSuicides = new List<string>();
             int highestKill = 0;
+            int highestDeath = 0;
+            int highestSuicide = 0;
             foreach (var player in players)
             {
+                // Kills
                 if (player.Score.Kills > highestKill)
                 {
                     highestKill = player.Score.Kills;
@@ -57,26 +63,60 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
                     if (!mostKills.Contains(player.Name))
                         mostKills.Add(player.Name);
                 }
+
+                // Deaths
+                if (player.Score.Deaths > highestDeath)
+                {
+                    highestDeath = player.Score.Deaths;
+                    mostDeaths.Clear();
+                }
+                if (player.Score.Deaths == highestDeath)
+                {
+                    if (!mostDeaths.Contains(player.Name))
+                        mostDeaths.Add(player.Name);
+                } 
+                
+                // Suicides
+                if (player.Score.Suicides > highestSuicide)
+                {
+                    highestSuicide = player.Score.Suicides;
+                    mostSuicides.Clear();
+                }
+                if (player.Score.Suicides == highestSuicide)
+                {
+                    if (!mostSuicides.Contains(player.Name))
+                        mostSuicides.Add(player.Name);
+                }
             }
 
             //_rconClient.SendMessageAll("KD: Round end.");
             //var mostKillsStr = (from m in mostKills
             //                    select m.Name).ToList<string>();
-            mostKills.Sort();
-            if (mostKills.Count > 0)
+            if (mostKills.Count > 0 && highestKill > 0)
             {
-                string str = null;
-                var last = mostKills.Last();
-                mostKills.Remove(last);
-                if (mostKills.Count > 0)
-                    str = String.Join(", ", mostKills);
+                mostKills.Sort();
+                string names = StringUtils.ListConcatWithAnd(mostKills);
+                Task.Delay(1200).ContinueWith(
+                    (t) =>
+                    _rconClient.SendMessageAll("KD: Most kills this round was " + highestKill + " by " + names));
+            }
 
-                if (str != null)
-                    str += " & ";
-                str += last;
+            if (mostDeaths.Count > 0 && highestDeath > 0)
+            {
+                mostDeaths.Sort();
+                string names = StringUtils.ListConcatWithAnd(mostDeaths);
                 Task.Delay(1000).ContinueWith(
                     (t) =>
-                     _rconClient.SendMessageAll("KD: Most kills this round was " + highestKill + " by " + str));
+                    _rconClient.SendMessageAll("KD: Most deaths this round was " + highestDeath + " by " + names));
+            }  
+            
+            if (mostSuicides.Count > 0 && highestSuicide > 0)
+            {
+                mostSuicides.Sort();
+                string names = StringUtils.ListConcatWithAnd(mostSuicides);
+                Task.Delay(1000).ContinueWith(
+                    (t) =>
+                    _rconClient.SendMessageAll("KD: Most suicides this round was " + highestSuicide + " by " + names));
             }
 
             //" after " + lastRoundServerInfo.ElapsedRoundTime + " seconds: " + lastRoundServerInfo.Team1.Name + " " + lastRoundServerInfo.Team1.);

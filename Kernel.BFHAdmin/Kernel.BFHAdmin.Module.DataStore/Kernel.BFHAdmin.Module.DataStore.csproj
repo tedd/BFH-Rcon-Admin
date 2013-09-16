@@ -49,6 +49,7 @@
     <Compile Include="DatabaseController.cs" />
     <Compile Include="Models\PlayerCache.cs" />
     <Compile Include="Models\PlayerHistoryItem.cs" />
+    <Compile Include="Models\PlayerSettings.cs" />
     <Compile Include="PlayerStorage.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

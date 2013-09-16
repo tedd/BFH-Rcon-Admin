@@ -18,12 +18,20 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
         private static Logger log = LogManager.GetCurrentClassLogger();
         private RconClient _rconClient;
         private PlayerCacheAndHistory playerEvents;
-        private int _minimumScoreToReport = 400;
-        private TimeSpan _killPeriodLookbehind = new TimeSpan(0, 0, 0, 30);
+        private int _reportKillsToAllAt = 5;
+        private int _reportKillsToPersonAt = 3;
+        private int _minimumScoreToReport = 700;
+        private int _warnCheatAtKDRatio = 20;
+        private int _minimumScoreToReportTopScorer = 1500;
+        private TimeSpan _killPeriodLookbehind = new TimeSpan(0, 0, 0, 60);
+        private TimeSpan _deathPeriodLookbehind = new TimeSpan(0, 0, 0, 60);
         private TimeSpan _scoreReportHistory = new TimeSpan(0, 0, 0, 60);
         private TimeSpan _scoreReportDelay = new TimeSpan(0, 0, 0, 10);
         private Queue<PlayerHistoryItem> _lastKills = new Queue<PlayerHistoryItem>();
+        private Queue<PlayerHistoryItem> _lastDeaths = new Queue<PlayerHistoryItem>();
         private int _lastkillsLength = 20;
+        private int _lastDeathsLength = 20;
+        private bool _lookingForFirstDeath = false;
         private bool _lookingForFirstKill = false;
         private Player _lastTopKiller = null;
         private Player _lastTopScorer = null;
@@ -97,15 +105,36 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             _lastTopScorer = null;
             _lastKills.Clear();
             _lookingForFirstKill = true;
+            _lookingForFirstDeath = true;
         }
 
         private void PlayerEventsOnPlayerUpdated(object sender, PlayerCache playerCache)
         {
             PrintScore(playerCache);
             PrintKillLabel(playerCache);
+            PrintDeathLabel(playerCache);
+            PrintSuicideLabel(playerCache);
+            PrintTooHighKD(playerCache);
 
                 PrintNewTopKiller(playerCache);
                 PrintNewTopScorer(playerCache);
+        }
+
+        private void PrintTooHighKD(PlayerCache playerCache)
+        {
+
+            // Did player kill someone?
+            if (playerCache.LastPlayerDelta.Score.Kills < 1)
+                return;
+
+            if (playerCache.Player.Score.KillDeathRatio >= _warnCheatAtKDRatio)
+            {
+                _rconClient.SendMessageAll("Warning: " + playerCache.Player.Name + " has very high kill-death ratio: " +
+                                           playerCache.Player.Score.KillDeathRatio + "(" + playerCache.Player.Score.Kills + " kills / " + playerCache.Player.Score.Deaths + " deaths)");
+                _rconClient.SendMessageAll("Warning: If " + playerCache.Player.Name +
+                                           " is cheating consider a VIP kick vote. Type: /kick " + playerCache.Player.Name);
+            }
+
         }
 
         private void PrintNewTopKiller(PlayerCache playerCache)
@@ -113,7 +142,7 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
 
             if (_lastTopKiller == null)
             {
-                _lastTopKiller = playerCache.Player;
+                _lastTopKiller = playerCache.Player.Clone();
                 //foreach (var player in _rconClient.PlayerListCommand.GetPlayers())
                 //{
                 //    if (_lastTopKiller == null || player.Score.Kills > _lastTopKiller.Score.Kills)
@@ -125,15 +154,22 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             {
                 if (_canReportTopScoreAndKill)
                 {
-                    _rconClient.SendMessagePlayer(playerCache.Player,
-                                                  "KD: You just replaced " + _lastTopKiller.Name +
-                                                  " as top killer this round.");
-                    _rconClient.SendMessagePlayer(playerCache.Player,
-                                                  "KD: You just got replaced as top killer by " +
-                                                  playerCache.Player.Name +
-                                                  ".");
+                    if (!playerCache.Settings.StopSpam)
+                    {
+                        _rconClient.SendMessagePlayer(playerCache.Player,
+                                                      "KD: You just replaced " + _lastTopKiller.Name +
+                                                      " as top killer this round.");
+                    }
+                    var other = playerEvents.GetPlayerCache(_lastTopKiller);
+                    if (other != null && !other.Settings.StopSpam)
+                    {
+                        _rconClient.SendMessagePlayer(_lastTopKiller,
+                                                      "KD: You just got replaced as top killer by " +
+                                                      playerCache.Player.Name +
+                                                      ".");
+                    }
                 }
-                _lastTopKiller = playerCache.Player;
+                _lastTopKiller = playerCache.Player.Clone();
             }
         }
 
@@ -141,7 +177,7 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
         {
             if (_lastTopScorer == null)
             {
-                _lastTopScorer = playerCache.Player;
+                _lastTopScorer = playerCache.Player.Clone();
                 //foreach (var player in _rconClient.PlayerListCommand.GetPlayers())
                 //{
                 //    if (_lastTopScorer == null || player.Score.Score > _lastTopScorer.Score.Score)
@@ -149,22 +185,42 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
                 //}
             }
 
-            if (_lastTopScorer.Name != playerCache.Player.Name && playerCache.Player.Score.Kills > _lastTopScorer.Score.Kills)
+            if (_lastTopScorer.Name != playerCache.Player.Name && playerCache.Player.Score.Score > _lastTopScorer.Score.Score)
+            //if (playerCache.Player.Score.Score > _lastTopScorer.Score.Score)
             {
-                if (_canReportTopScoreAndKill)
+                _lastTopScorer = playerCache.Player.Clone();
+                if (_canReportTopScoreAndKill && playerCache.Player.Score.Score > _minimumScoreToReportTopScorer)
                 {
+                    if (!playerCache.Settings.StopSpam)
+                    {
 
-                    _rconClient.SendMessagePlayer(playerCache.Player,
-                                                  "KD: You just replaced " + _lastTopScorer.Name +
-                                                  " as top scorer this round.");
-                    _rconClient.SendMessagePlayer(playerCache.Player,
-                                                  "KD: You just got replaced as top scorer by " +
-                                                  playerCache.Player.Name +
-                                                  ".");
+                        _rconClient.SendMessagePlayer(playerCache.Player,
+                                                      "KD: You just replaced " + _lastTopScorer.Name +
+                                                      " as top scorer this round.");
+                    }
+                    var other = playerEvents.GetPlayerCache(_lastTopScorer);
+                    if (other != null && !other.Settings.StopSpam)
+                    {
+                        _rconClient.SendMessagePlayer(_lastTopScorer,
+                                                      "KD: You just got replaced as top scorer by " +
+                                                      playerCache.Player.Name +
+                                                      ".");
+                    }
                 }
 
-                _lastTopScorer = playerCache.Player;
+                
             }
+        }
+
+        private void PrintSuicideLabel(PlayerCache playerCache)
+        {
+            // Print some simple kill stats to player and all when at certain threshold
+
+            // Did player kill someone?
+            if (playerCache.LastPlayerDelta.Score.Suicides < 1)
+                return;
+
+            _rconClient.SendMessageAll("KD: " + playerCache.Player.Name + " suicided.");
         }
 
         private void PrintKillLabel(PlayerCache playerCache)
@@ -183,7 +239,7 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             if (_lookingForFirstKill)
             {
                 _lookingForFirstKill = false;
-                _rconClient.SendMessageAll("KD: First kill: " + playerCache.Player.Name);
+                _rconClient.SendMessageAll("KD: First kill: " + playerCache.Player.Name + " in " + _rconClient.ServerInfoCommand.ServerInfo.ElapsedRoundTime + " seconds.");
             }
 
             int kills = 0;
@@ -210,10 +266,63 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             var timeSinceOldest = DateTime.Now.Subtract(oldestUpdate);
 
             // Message player
-            if (kills > 2)
+            if (kills >= _reportKillsToPersonAt && !playerCache.Settings.StopSpam)
                 _rconClient.SendMessagePlayer(playerCache.Player, "KD: Last " + (int)timeSinceOldest.TotalSeconds + " seconds: " + kills + " kills.");
-            if (kills > 5)
+            if (kills >= _reportKillsToAllAt)
                 _rconClient.SendMessageAll("KD: " + playerCache.Player.Name + " has " + kills + " kills in just " + (int)timeSinceOldest.TotalSeconds + " seconds.");
+        }
+        private void PrintDeathLabel(PlayerCache playerCache)
+        {
+            // Print some simple Death stats to player and all when at certain threshold
+
+            // Did player Death someone?
+            if (playerCache.LastPlayerDelta.Score.Deaths < 1)
+                return;
+
+
+            var historyItems = new List<PlayerHistoryItem>(GetHistory(playerCache, _deathPeriodLookbehind));
+            if (historyItems.Count() == 0)
+                return;
+
+            if (_lookingForFirstDeath)
+            {
+                _lookingForFirstDeath = false;
+                _rconClient.SendMessageAll("KD: First Death: " + playerCache.Player.Name);
+            }
+
+            int deaths = 0;
+            DateTime oldestUpdate = default(DateTime);
+            PlayerHistoryItem lastWithDeath = null;
+            foreach (var historyItem in historyItems)
+            {
+                deaths += historyItem.PlayerDelta.Score.Deaths;
+                if (historyItem.PlayerDelta.Score.Deaths > 0)
+                    lastWithDeath = historyItem;
+            }
+            // Last Death watch
+            if (lastWithDeath != null)
+            {
+                oldestUpdate = lastWithDeath.Player.LastUpdate;
+                _lastDeaths.Enqueue(lastWithDeath);
+            }
+            // Last Death queue length limit
+            while (_lastDeaths.Count > _lastDeathsLength)
+            {
+                _lastDeaths.Dequeue();
+            }
+
+            var timeSinceOldest = DateTime.Now.Subtract(oldestUpdate);
+
+            // Message player
+            if (deaths > 1 && !playerCache.Settings.StopSpam)
+            {
+
+                _rconClient.SendMessagePlayer(playerCache.Player,
+                                              "KD: Last " + (int) timeSinceOldest.TotalSeconds + " seconds: " + deaths +
+                                              " deaths.");
+            }
+            if (deaths > 3)
+                _rconClient.SendMessageAll("KD: " + playerCache.Player.Name + " has " + deaths + " deaths in just " + (int)timeSinceOldest.TotalSeconds + " seconds.");
         }
 
         private void PrintScore(PlayerCache playerCache)
@@ -244,7 +353,7 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             }
             var oldestSec = (int)timeSinceOldest.TotalSeconds;
             // Message player
-            if (score > _minimumScoreToReport && score > playerCache.LastScoreReported - lastReportedTime.TotalSeconds)
+            if (!playerCache.Settings.StopSpam && score > _minimumScoreToReport && score > playerCache.LastScoreReported - lastReportedTime.TotalSeconds)
             {
                 //var tmpScore = playerCache.LastScoreReported;
                 playerCache.LastScoreReported = score;

@@ -156,7 +156,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                     OnPlayerJoined(p);
                 }
 
-                OnPlayerUpdated(p);
+                
             }
 
             foreach (var kvp in new Dictionary<string, Player>(_players))
@@ -167,6 +167,11 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                     RconClient.ServerInfoCommand.ServerInfo.Team1.RemovePlayer(kvp.Value);
                     OnPlayerLeft(kvp.Value);
                     removed++;
+                }
+                else
+                {
+                    // Signal that player has been updated
+                    OnPlayerUpdated(kvp.Value);
                 }
             }
 
@@ -186,6 +191,21 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
             }
             return null;
         }
+        public Player SearchForPlayer(string playerNameMask)
+        {
+            var search = playerNameMask.ToLower();
+            List<Player> players;
+            lock (_players)
+            {
+                players = new List<Player>(_players.Values);
+            }
+            foreach (var player in players)
+            {
+                if (player.Name.ToLower().Contains(search))
+                    return player;
+            }
+            return null;
+        }
         public IEnumerable<Player> GetPlayers()
         {
             List<Player> players;
@@ -196,6 +216,21 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
             foreach (var player in players)
             {
                 yield return player;
+            }
+        }
+
+        public IEnumerable<Player> GetPlayers(string searchMask)
+        {
+            var search = searchMask.ToLower();
+            List<Player> players;
+            lock (_players)
+            {
+                players = new List<Player>(_players.Values);
+            }
+            foreach (var player in players)
+            {
+                if (player.Name.ToLower().Contains(search))
+                    yield return player;
             }
         }
 

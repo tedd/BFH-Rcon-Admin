@@ -16,6 +16,7 @@ namespace Kernel.BFHAdmin.Module.DataStore.Models
 
         private Player _player;
         private DateTime _lastScoreReportedTime = DateTime.Now;
+        private PlayerSettings _settings = new PlayerSettings();
 
         public Player Player
         {
@@ -24,6 +25,17 @@ namespace Kernel.BFHAdmin.Module.DataStore.Models
             {
                 if (Equals(value, _player)) return;
                 _player = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public PlayerSettings Settings
+        {
+            get { return _settings; }
+            set
+            {
+                if (Equals(value, _settings)) return;
+                _settings = value;
                 OnPropertyChanged();
             }
         }

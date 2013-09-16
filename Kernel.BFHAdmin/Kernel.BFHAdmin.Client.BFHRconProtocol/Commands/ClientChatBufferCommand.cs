@@ -20,10 +20,19 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
         // 9	Weathroz	1	Global	[03:26:13]	ewrw
         //"9\tWeathroz\t1\tGlobal\t[03:31:36]\tefwfw"
         private Regex reg_ClientBuffer = new Regex(@"^.(?<number>[^\t]+)\t(?<from>[^\t]+)\t(?<what>[^\t]+)\t(?<type>[^\t]+)\t(?<timestamp>[^\t]+)\t(?<message>.*)$");
-
+        private Regex reg_Command = new Regex(@"^[\|/](?<cmd>\S+)(\s+(?<params>.*))?$");
+        private char[] c_space = " ".ToCharArray();
         public delegate void ChatLineReceivedDelegate(object sender, ChatHistoryItem chatHistoryItem);
+        public delegate void CommandReceivedDelegate(object sender, ChatHistoryItem chatHistoryItem, string from, string command, string[] param, string fullParam);
 
         public event ChatLineReceivedDelegate ChatLineReceived;
+        public event CommandReceivedDelegate CommandReceived;
+
+        protected virtual void OnCommandReceived(ChatHistoryItem chathistoryitem, string @from, string command, string[] param, string fullparam)
+        {
+            CommandReceivedDelegate handler = CommandReceived;
+            if (handler != null) handler(this, chathistoryitem, @from, command, param, fullparam);
+        }
 
         protected virtual void OnChatLineReceived(ChatHistoryItem chathistoryitem)
         {
@@ -76,6 +85,19 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                         }
                     }
                     OnChatLineReceived(item);
+
+                    // Now check if its a command
+                    var result = reg_Command.Match(item.Message);
+                    if (result.Success)
+                    {
+                        var cmd = result.Groups["cmd"].Value.ToLower();
+                        var p = result.Groups["params"].Value;
+                        p = Regex.Replace(p, @"\s\s+", " ");
+                        var ps = p.Split(c_space);
+                        OnCommandReceived(item, item.From, cmd, ps, p);
+                    }
+                        
+
                 }
             }
             log.Trace("RefreshClientChatBufferCommand(): End (" + lines.Count + " chat lines)");

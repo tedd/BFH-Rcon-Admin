@@ -221,6 +221,20 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Models
             }
         }
 
+        public decimal KillDeathRatio
+        {
+            get
+            {
+                decimal sum = (decimal)Kills;
+                if (Deaths > 0)
+                {
+                    sum = (decimal)Kills / (decimal)Deaths;
+                }
+                sum = (decimal) ((int) (sum*100))/100;
+                return sum;
+            }
+        }
+
         public PlayerScore Clone()
         {
             return (PlayerScore)this.MemberwiseClone();

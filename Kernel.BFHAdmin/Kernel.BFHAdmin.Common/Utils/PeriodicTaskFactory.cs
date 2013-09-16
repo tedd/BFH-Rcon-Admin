@@ -49,7 +49,19 @@ namespace Kernel.BFHAdmin.Common.Utils
 
             Action mainAction = () =>
             {
-                MainPeriodicTaskAction(intervalInMilliseconds, delayInMilliseconds, duration, maxIterations, cancelToken, stopWatch, synchronous, wrapperAction, periodicTaskCreationOptions);
+                try
+                {
+                    MainPeriodicTaskAction(intervalInMilliseconds, delayInMilliseconds, duration, maxIterations,
+                                           cancelToken, stopWatch, synchronous, wrapperAction,
+                                           periodicTaskCreationOptions);
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception exception)
+                {
+                    throw;
+                }
             };
 
             return Task.Factory.StartNew(mainAction, cancelToken, TaskCreationOptions.LongRunning, TaskScheduler.Current);

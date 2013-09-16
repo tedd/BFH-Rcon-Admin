@@ -49,6 +49,7 @@
     <Compile Include="PlayerCommands.cs" />
     <Compile Include="HighlightNotifier.cs" />
     <Compile Include="PlayerCacheAndHistory.cs" />
+    <Compile Include="PlayerCommands_Track.cs" />
     <Compile Include="PreGame.cs" />
     <Compile Include="PlayerHighlightNotifier.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
