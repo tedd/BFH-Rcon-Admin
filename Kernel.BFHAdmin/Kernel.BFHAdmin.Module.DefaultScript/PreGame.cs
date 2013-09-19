@@ -37,7 +37,7 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             if (!_rconClient.ServerInfoCommand.ServerInfo.IsPregame)
                 return;
 
-            var playerCount = _rconClient.ServerInfoCommand.ServerInfo.Players;
+            var playerCount = _rconClient.ServerInfoCommand.ServerInfo.Players + 1;
             _rconClient.SendMessageAll(player.Name + " just joined the fight. You are now " + playerCount + " players.");
             _rconClient.SendMessagePlayer(player, "Welcome to pre-game. In this mode widget use is FREE.");
             _rconClient.SendMessagePlayer(player, "Pre-game starts when there are less than two players on either team.");
