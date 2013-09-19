@@ -18,8 +18,8 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
         private static Logger log = LogManager.GetCurrentClassLogger();
         private RconClient _rconClient;
         private PlayerCacheAndHistory playerEvents;
-        private int _reportKillsToAllAt = 5;
-        private int _reportKillsToPersonAt = 3;
+        private int _reportKillsToAllAt = 8;
+        private int _reportKillsToPersonAt = 4;
         private int _minimumScoreToReport = 700;
         private int _warnCheatAtKDRatio = 20;
         private int _minimumScoreToReportTopScorer = 1500;

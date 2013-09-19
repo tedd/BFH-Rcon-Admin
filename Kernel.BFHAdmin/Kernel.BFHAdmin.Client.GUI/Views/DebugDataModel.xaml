@@ -11,8 +11,8 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <xctk:PropertyGrid Grid.Column="0" SelectedObject="{Binding RconClient, Mode=OneWay}" IsReadOnly="true"  />
-        <xctk:PropertyGrid Grid.Column="1" SelectedObject="{Binding RconClient.ServerInfoCommand.ServerInfo, Mode=OneWay}" IsReadOnly="true"  />
+        <!--<xctk:PropertyGrid Grid.Column="0" SelectedObject="{Binding RconClient, Mode=OneWay}" IsReadOnly="true"  />
+        <xctk:PropertyGrid Grid.Column="1" SelectedObject="{Binding RconClient.ServerInfoCommand.ServerInfo, Mode=OneWay}" IsReadOnly="true"  />-->
         
     </Grid>
 </UserControl>
