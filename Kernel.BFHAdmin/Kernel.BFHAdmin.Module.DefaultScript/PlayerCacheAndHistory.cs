@@ -29,6 +29,16 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             if (handler != null) handler(this, playerCache);
         }
 
+        public delegate void PlayerUpdateDoneDelegate(object sender);
+
+        public event PlayerUpdateDoneDelegate PlayerUpdateDone;
+
+        protected virtual void OnPlayerUpdateDone()
+        {
+            PlayerUpdateDoneDelegate handler = PlayerUpdateDone;
+            if (handler != null) handler(this);
+        }
+
         public delegate void RegisteredDelegate(PlayerCacheAndHistory playerEvents);
         public static event RegisteredDelegate Registered;
 
@@ -46,7 +56,8 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
         public void Register(RconClient rconClient)
         {
             _rconClient = rconClient;
-            _rconClient.PlayerListCommand.PlayerUpdated += PlayerListCommandOnPlayerUpdated;
+            //_rconClient.PlayerListCommand.PlayerUpdated += PlayerListCommandOnPlayerUpdated;
+            _rconClient.PlayerListCommand.PlayerUpdateDone += PlayerListCommandOnPlayerUpdateDone;
             _rconClient.PlayerListCommand.PlayerLeft += PlayerListCommandOnPlayerLeft;
             _rconClient.PlayerListCommand.PlayerJoined += PlayerListCommandOnPlayerJoined;
 
@@ -55,6 +66,8 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
 
             OnRegistered(this);
         }
+
+       
 
         public void ModuleLoadComplete()
         {
@@ -126,6 +139,15 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
                 // Remove player from our cache
                 _players.Remove(player);
             }
+        }
+
+        private void PlayerListCommandOnPlayerUpdateDone(object sender)
+        {
+            foreach (var player in _rconClient.PlayerListCommand.GetPlayers())
+            {
+                PlayerListCommandOnPlayerUpdated(sender, player);
+            }
+            OnPlayerUpdateDone();
         }
 
         private void PlayerListCommandOnPlayerUpdated(object sender, Player player)

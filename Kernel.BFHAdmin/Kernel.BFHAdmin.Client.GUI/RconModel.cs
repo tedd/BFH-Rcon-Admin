@@ -105,39 +105,43 @@ namespace Kernel.BFHAdmin.Client.GUI
             RconClient.PlayerListCommand.PlayerLeft += RconClientOnPlayerLeft;
             RconClient.ServerInfoCommand.RoundStart += ServerInfoCommandOnRoundStart;
             RconClient.Connected += RconClientOnConnected;
-            await RconClient.Connect(Config.RconServerAddress, Config.RconServerPort, Config.RconServerPassword);
-    }
+                await RconClient.Connect(Config.RconServerAddress, Config.RconServerPort, Config.RconServerPassword);
+       
+        }
 
         private void RconClientOnDisconnected(object sender)
         {
-            Connect();
+            DoConnect();
         }
 
-        public void Connect()
+        public async void Connect()
         {
-            lock (_isConnectingLock)
+            if (!IsConnecting)
             {
-                if (!IsConnecting)
-                {
-                    IsConnecting = true;
-                    Task.Delay(_reconnectDelayMs).ContinueWith(
-                        (o) =>
+                IsConnecting = true;
+                await Task.Delay(_reconnectDelayMs).ContinueWith(
+                    (o) =>
+                    {
+                        lock (_isConnectingLock)
                         {
-                            lock (_isConnectingLock)
+                            try
                             {
-                                try
-                                {
-                                    DoConnect();
-                                }
-                                catch (Exception exception)
-                                {
-                                    log.ErrorException("RconModel.Connect(): Exception connecting: ", exception);
-                                    Connect();
-                                }
+                                DoConnect();
                                 IsConnecting = false;
                             }
-                        });
-                }
+                            catch (Exception exception)
+                            {
+                                log.ErrorException("RconModel.Connect(): Exception connecting: ", exception);
+                                
+                            }
+                            if (IsConnecting)
+                            {
+                                IsConnecting = false;
+                                Connect();
+                            }
+                            
+                        }
+                    });
             }
         }
 
@@ -154,7 +158,7 @@ namespace Kernel.BFHAdmin.Client.GUI
             //MapImage = new WriteableBitmap();
 
         }
-        
+
         private void RconClientOnPlayerLeft(object sender, Player player)
         {
             Dispatcher.Invoke(() => Players.Remove(player));

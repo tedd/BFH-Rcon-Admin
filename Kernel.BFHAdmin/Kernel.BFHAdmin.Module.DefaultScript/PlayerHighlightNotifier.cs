@@ -36,6 +36,7 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
         private Player _lastTopKiller = null;
         private Player _lastTopScorer = null;
         private bool _canReportTopScoreAndKill = false;
+        private int _roundJustEnded = 0;
         public void Register(RconClient rconClient)
         {
             _rconClient = rconClient;
@@ -47,16 +48,33 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
         private void PlayerListCommandOnPlayerUpdateDone(object sender)
         {
             _canReportTopScoreAndKill = true;
+            ProcessRoundEnd();
         }
 
         public void ModuleLoadComplete()
         {
             playerEvents = PlayerCacheAndHistory.Current;
-            playerEvents.PlayerUpdated += PlayerEventsOnPlayerUpdated;
+            //playerEvents.PlayerUpdated += PlayerEventsOnPlayerUpdated;
+            playerEvents.PlayerUpdateDone += PlayerEventsOnPlayerUpdateDone;
+        }
+
+        private void PlayerEventsOnPlayerUpdateDone(object sender)
+        {
+            foreach (var playerCache in ((PlayerCacheAndHistory)sender).GetPlayersCache())
+            {
+                PlayerEventsOnPlayerUpdated(sender, playerCache);
+            }
         }
 
         private void ServerInfoCommandOnRoundEnd(object sender, ServerInfo lastRoundServerInfo)
         {
+            _roundJustEnded = 3;
+        }
+        private void ProcessRoundEnd()
+        {
+            _roundJustEnded--;
+            if (_roundJustEnded != 0)
+                return;
             //log.Fatal("PrintKillLabel queue size: " + _lastKills.Count);
 
             DateTime lastKillTime = DateTime.MinValue;
@@ -116,8 +134,8 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             PrintSuicideLabel(playerCache);
             PrintTooHighKD(playerCache);
 
-                PrintNewTopKiller(playerCache);
-                PrintNewTopScorer(playerCache);
+            PrintNewTopKiller(playerCache);
+            PrintNewTopScorer(playerCache);
         }
 
         private void PrintTooHighKD(PlayerCache playerCache)
@@ -165,7 +183,7 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
                     {
                         _rconClient.SendMessagePlayer(_lastTopKiller,
                                                       "KD: You just got replaced as top killer by " +
-                                                      playerCache.Player.Name +
+                                                      playerCache.Player +
                                                       ".");
                     }
                 }
@@ -188,7 +206,6 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             if (_lastTopScorer.Name != playerCache.Player.Name && playerCache.Player.Score.Score > _lastTopScorer.Score.Score)
             //if (playerCache.Player.Score.Score > _lastTopScorer.Score.Score)
             {
-                _lastTopScorer = playerCache.Player.Clone();
                 if (_canReportTopScoreAndKill && playerCache.Player.Score.Score > _minimumScoreToReportTopScorer)
                 {
                     if (!playerCache.Settings.StopSpam)
@@ -207,8 +224,7 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
                                                       ".");
                     }
                 }
-
-                
+                _lastTopScorer = playerCache.Player.Clone();
             }
         }
 
@@ -318,7 +334,7 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
             {
 
                 _rconClient.SendMessagePlayer(playerCache.Player,
-                                              "KD: Last " + (int) timeSinceOldest.TotalSeconds + " seconds: " + deaths +
+                                              "KD: Last " + (int)timeSinceOldest.TotalSeconds + " seconds: " + deaths +
                                               " deaths.");
             }
             if (deaths > 3)

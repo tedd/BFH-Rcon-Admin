@@ -43,7 +43,16 @@ namespace Kernel.BFHAdmin.Module.DefaultScript
 
         public void ModuleLoadComplete()
         {
-            PlayerCacheAndHistory.Current.PlayerUpdated += PlayerEventsOnPlayerUpdated;
+            PlayerCacheAndHistory.Current.PlayerUpdateDone += CurrentOnPlayerUpdateDone;
+            //PlayerCacheAndHistory.Current.PlayerUpdated += PlayerEventsOnPlayerUpdated;
+        }
+
+        private void CurrentOnPlayerUpdateDone(object sender)
+        {
+            foreach (var playerCache in ((PlayerCacheAndHistory) sender).GetPlayersCache())
+            {
+                PlayerEventsOnPlayerUpdated(sender, playerCache);
+            }
         }
 
         private void PlayerEventsOnPlayerUpdated(object sender, PlayerCache playercache)

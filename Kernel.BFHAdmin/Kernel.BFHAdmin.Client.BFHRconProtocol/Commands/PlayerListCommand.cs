@@ -38,13 +38,13 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
             PlayerLeftDelegate handler = PlayerLeft;
             if (handler != null) handler(this, player);
         }
-        public delegate void PlayerUpdatedDelegate(object sender, Player player);
-        public event PlayerUpdatedDelegate PlayerUpdated;
-        protected virtual void OnPlayerUpdated(Player player)
-        {
-            PlayerUpdatedDelegate handler = PlayerUpdated;
-            if (handler != null) handler(this, player);
-        }
+        //public delegate void PlayerUpdatedDelegate(object sender, Player player);
+        //public event PlayerUpdatedDelegate PlayerUpdated;
+        //protected virtual void OnPlayerUpdated(Player player)
+        //{
+        //    PlayerUpdatedDelegate handler = PlayerUpdated;
+        //    if (handler != null) handler(this, player);
+        //}
 
         public delegate void PlayerUpdateStartDelegate(object sender);
         public event PlayerUpdateStartDelegate PlayerUpdateStart;
@@ -171,7 +171,7 @@ namespace Kernel.BFHAdmin.Client.BFHRconProtocol.Commands
                 else
                 {
                     // Signal that player has been updated
-                    OnPlayerUpdated(kvp.Value);
+                    //OnPlayerUpdated(kvp.Value);
                 }
             }
 
